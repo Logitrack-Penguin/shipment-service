@@ -2,6 +2,8 @@ package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto;
 
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.EstadoRepartidor;
 import lombok.*;
+
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -32,14 +34,9 @@ public class RepartidorResponseDto {
     private String dni;
 
     /**
-     * Nombre de pila del repartidor.
+     * Nombre completo del repartidor.
      */
-    private String nombre;
-
-    /**
-     * Apellido del repartidor.
-     */
-    private String apellido;
+    private String nombreCompleto;
 
     /**
      * Número telefónico de contacto del repartidor.
@@ -56,4 +53,10 @@ public class RepartidorResponseDto {
      * @see EstadoRepartidor
      */
     private EstadoRepartidor estadoRepartidor;
+
+    /**
+     * Fecha de registro del repartidor en el sistema. Atributo heredado de la clase padre de auditoría
+     * {@link ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.audit.EntidadAuditable}
+     */
+    private LocalDateTime fechaCreacion;
 }

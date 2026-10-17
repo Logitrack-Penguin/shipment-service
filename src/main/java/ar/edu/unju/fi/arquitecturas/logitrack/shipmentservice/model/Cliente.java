@@ -2,10 +2,7 @@ package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model;
 
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.audit.EntidadAuditable;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +23,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@Builder
 @Table(name = "clientes")
 public class Cliente extends EntidadAuditable{
 

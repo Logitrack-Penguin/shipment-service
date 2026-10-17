@@ -6,6 +6,7 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.EstadoEnvio;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -51,6 +52,16 @@ public class EnvioResponseDto {
     private Double tarifa;
 
     /**
+     * Datos del remitente del envío.
+     */
+    private String remitente;
+
+    /**
+     * Datos del repartidor asignado a la entrega.
+     */
+    private String repartidorAsignado;
+
+    /**
      * Estado actual del envío.
      * @see EstadoEnvio
      */
@@ -81,4 +92,10 @@ public class EnvioResponseDto {
      * @see Direccion
      */
     private Direccion direccionDestino;
+
+    /**
+     * Fecha de registro del envío en el sistema. Atributo heredado de la clase padre de auditoría
+     * {@link ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.audit.EntidadAuditable}
+     */
+    private LocalDateTime fechaCreacion;
 }

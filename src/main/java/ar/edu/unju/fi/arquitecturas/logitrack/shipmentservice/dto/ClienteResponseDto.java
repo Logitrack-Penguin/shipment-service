@@ -34,14 +34,9 @@ public class ClienteResponseDto {
     private String dni;
 
     /**
-     * Nombre de pila del cliente.
+     * Nombre completo del cliente.
      */
-    private String nombre;
-
-    /**
-     * Apellido del cliente.
-     */
-    private String apellido;
+    private String nombreCompleto;
 
     /**
      * Correo Electrónico de contacto del cliente.
@@ -55,7 +50,7 @@ public class ClienteResponseDto {
 
     /**
      * Fecha de registro del cliente en el sistema. Atributo heredado de la clase padre de auditoría
-     * {@link ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.EntidadAuditable}
+     * {@link ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.audit.EntidadAuditable}
      */
     private LocalDateTime fechaCreacion;
 }
