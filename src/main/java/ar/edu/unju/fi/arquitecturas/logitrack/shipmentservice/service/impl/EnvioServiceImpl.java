@@ -23,7 +23,19 @@ import java.util.UUID;
 
 /**
  * Implementación transaccional del servicio de aplicación {@link EnvioService}.
+ * <p>
+ * Centraliza la orquestación de operaciones de negocio para la gestión de envíos,
+ * garantizando integridad transaccional ACID, inmutabilidad de componentes y auditoría vía logs.
+ * </p>
+ *
+ * @author Logitrack-Penguin
+ * @version 1.0.0
+ * @since 17-10-2026
+ * @see EnvioService
+ * @see EnvioRepository
+ * @see EnvioMapper
  */
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -32,6 +44,9 @@ public class EnvioServiceImpl implements EnvioService {
     private final EnvioRepository envioRepository;
     private final HistoricoEstadoEnvioRepository historicoEstadoEnvioRepository;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional
     public EnvioResponseDto registrarEnvio(EnvioRequestDto request) {
@@ -69,6 +84,9 @@ public class EnvioServiceImpl implements EnvioService {
         return EnvioMapper.toResponseDto(envioGuardado);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional(readOnly = true)
     public EnvioResponseDto obtenerPorId(UUID idEnvio) {
@@ -78,6 +96,9 @@ public class EnvioServiceImpl implements EnvioService {
         return EnvioMapper.toResponseDto(envio);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional
     public EnvioResponseDto cambiarEstado(String codigoSeguimiento, String codigoRecepcion) {
@@ -110,6 +131,10 @@ public class EnvioServiceImpl implements EnvioService {
         return EnvioMapper.toResponseDto(envioActualizado);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+
     @Override
     @Transactional(readOnly = true)
     public EnvioResponseDto obtenerPorCodigoSeguimiento(String codigoSeguimiento) {
@@ -117,6 +142,9 @@ public class EnvioServiceImpl implements EnvioService {
         return EnvioMapper.toResponseDto(envio);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional(readOnly = true)
     public List<EnvioResponseDto> listarPorEstado(EstadoEnvio estado) {
@@ -130,6 +158,9 @@ public class EnvioServiceImpl implements EnvioService {
                 .toList();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional
     public EnvioResponseDto cancelarEnvio(UUID idEnvio) {
@@ -158,6 +189,15 @@ public class EnvioServiceImpl implements EnvioService {
         log.info("Envío con ID {} cancelado exitosamente", idEnvio);
         return EnvioMapper.toResponseDto(envioActualizado);
     }
+
+    /**
+     * Busca y recupera la entidad {@link Envio} correspondiente en la base de datos
+     * utilizando su código de seguimiento.
+     *
+     * @param codigoSeguimiento Código de seguimiento único del envío a buscar.
+     * @return La instancia de la entidad {@link Envio} encontrada.
+     * @throws RecursoNoEncontradoException si no existe ningún envío registrado con el código proporcionado.
+     */
 
     protected Envio obtenerEnvioEntityPorCodigoSeguimiento(String codigoSeguimiento) {
         log.debug("Ejecutando consulta de envío con código de seguimiento: {}", codigoSeguimiento);
