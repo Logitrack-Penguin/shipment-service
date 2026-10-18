@@ -1,4 +1,4 @@
-package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model;
+package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums;
 
 /**
  * Clase de tipo Enumerado correspondiente a los posibles estados que puede tener un repartidor registrado.

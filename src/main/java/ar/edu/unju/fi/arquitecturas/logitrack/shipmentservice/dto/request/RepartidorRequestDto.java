@@ -1,4 +1,4 @@
-package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto;
+package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

@@ -29,5 +29,5 @@ public interface HistoricoEstadoEnvioRepository extends JpaRepository<HistoricoE
      * @param codigoSeguimiento Código de seguimiento del envío correspondiente.
      * @return {@link List} Listado de los cambios en orden cronológico.
      */
-    List<HistoricoEstadoEnvio> findByCodigoSeguimientoOrderByFechaCambioAsc(String codigoSeguimiento);
+    List<HistoricoEstadoEnvio> findByCodigoSeguimientoOrderByFechaCambioEstadoAsc(String codigoSeguimiento);
 }

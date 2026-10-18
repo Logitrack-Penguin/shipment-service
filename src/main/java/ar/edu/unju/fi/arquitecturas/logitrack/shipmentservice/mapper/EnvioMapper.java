@@ -1,7 +1,7 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.mapper;
 
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.EnvioRequestDto;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.EnvioResponseDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
 
 /**

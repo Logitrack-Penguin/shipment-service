@@ -1,8 +1,9 @@
-package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto;
+package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response;
 
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Dimensiones;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Direccion;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.EstadoEnvio;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.EntidadAuditable;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -95,7 +96,7 @@ public class EnvioResponseDto {
 
     /**
      * Fecha de registro del envío en el sistema. Atributo heredado de la clase padre de auditoría
-     * {@link ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.audit.EntidadAuditable}
+     * {@link EntidadAuditable}
      */
     private LocalDateTime fechaCreacion;
 }

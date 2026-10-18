@@ -1,6 +1,6 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model;
 
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.audit.EntidadAuditable;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import jakarta.persistence.*;
 import lombok.*;
 
