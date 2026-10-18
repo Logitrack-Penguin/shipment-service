@@ -22,6 +22,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Entity
 @Builder
 @Table(name = "repartidores")
 public class Repartidor extends EntidadAuditable{
