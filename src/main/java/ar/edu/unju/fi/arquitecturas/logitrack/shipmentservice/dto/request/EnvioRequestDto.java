@@ -1,8 +1,7 @@
-package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto;
+package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request;
 
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Dimensiones;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Direccion;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 

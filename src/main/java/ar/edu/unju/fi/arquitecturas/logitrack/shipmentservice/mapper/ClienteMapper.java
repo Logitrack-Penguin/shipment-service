@@ -1,7 +1,7 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.mapper;
 
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.ClienteRequestDto;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.ClienteResponseDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.ClienteRequestDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.ClienteResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Cliente;
 
 import java.util.ArrayList;

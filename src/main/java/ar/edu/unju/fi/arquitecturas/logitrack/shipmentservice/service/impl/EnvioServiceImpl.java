@@ -1,62 +1,101 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.impl;
 
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.EnvioResponseDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.mapper.EnvioMapper;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.EstadoEnvio;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.EnvioService;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.EnvioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Implementación transaccional del servicio de aplicación {@link EnvioService}.
- * <p>
- * Centraliza la orquestación de operaciones de negocio para la gestión de envíos,
- * garantizando integridad transaccional ACID, inmutabilidad de componentes y auditoría vía logs.
- * </p>
- *
- * @author Logitrack-Penguin
- * @version 1.0.0
- * @since 17-10-2026
- * @see EnvioService
- * @see EnvioRepository
- * @see EnvioMapper
  */
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class EnvioServiceImpl implements EnvioService {
+
     private final EnvioRepository envioRepository;
     private final HistoricoEstadoEnvioRepository historicoEstadoEnvioRepository;
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    @Transactional
+    public EnvioResponseDto registrarEnvio(EnvioRequestDto request) {
+        log.info("Iniciando registro de nuevo envío");
+
+        String codigoSeguimiento = "TRK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String codigoRecepcion = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+        Double volumen = request.getDimensiones().getAncho() * request.getDimensiones().getAlto() * request.getDimensiones().getLargo();
+        Double tarifa = (request.getPeso() * 100) + (volumen * 0.05);
+
+        Envio envio = Envio.builder()
+                .codigoSeguimiento(codigoSeguimiento)
+                .peso(request.getPeso())
+                .dimensiones(request.getDimensiones())
+                .tarifa(tarifa)
+                .estadoEnvio(EstadoEnvio.PENDIENTE)
+                .fechaEstimadaEntrega(LocalDate.now().plusDays(3))
+                .codigoRecepcion(codigoRecepcion)
+                .direccionOrigen(request.getDireccionOrigen())
+                .direccionDestino(request.getDireccionDestino())
+                .build();
+
+        Envio envioGuardado = envioRepository.save(envio);
+
+        HistoricoEstadoEnvio historico = HistoricoEstadoEnvio.builder()
+                .codigoSeguimiento(codigoSeguimiento)
+                .estadoEnvioAnterior(null)
+                .estadoEnvioNuevo(EstadoEnvio.PENDIENTE)
+                .fechaCambioEstado(LocalDateTime.now())
+                .build();
+        historicoEstadoEnvioRepository.save(historico);
+
+        log.info("Envío registrado exitosamente con código de seguimiento: {}", codigoSeguimiento);
+        return EnvioMapper.toResponseDto(envioGuardado);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EnvioResponseDto obtenerPorId(UUID idEnvio) {
+        log.debug("Buscando envío por ID: {}", idEnvio);
+        Envio envio = envioRepository.findById(idEnvio)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Envío no encontrado con ID: " + idEnvio));
+        return EnvioMapper.toResponseDto(envio);
+    }
+
     @Override
     @Transactional
     public EnvioResponseDto cambiarEstado(String codigoSeguimiento, String codigoRecepcion) {
         log.info("Cambiando el estado del envío con código de seguimiento: {}", codigoSeguimiento);
         Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
         EstadoEnvio estadoEnvioAnterior = envio.getEstadoEnvio();
-        if (envio.getEstadoEnvio().equals(EstadoEnvio.PENDIENTE)){
+
+        if (envio.getEstadoEnvio().equals(EstadoEnvio.PENDIENTE)) {
             envio.setEstadoEnvio(EstadoEnvio.EN_RUTA);
         } else if (envio.getEstadoEnvio().equals(EstadoEnvio.EN_RUTA)) {
-            if(codigoRecepcion == null){
+            if (codigoRecepcion == null) {
                 throw new OperacionInvalidaException("Debe ingresar el código de recepción.");
             } else if (!codigoRecepcion.equals(envio.getCodigoRecepcion())) {
                 throw new OperacionInvalidaException("El código de recepción ingresado es incorrecto.");
             }
             envio.setEstadoEnvio(EstadoEnvio.ENTREGADO);
         }
+
         Envio envioActualizado = envioRepository.save(envio);
 
         HistoricoEstadoEnvio historico = HistoricoEstadoEnvio.builder()
@@ -71,24 +110,55 @@ public class EnvioServiceImpl implements EnvioService {
         return EnvioMapper.toResponseDto(envioActualizado);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional(readOnly = true)
-    public EnvioResponseDto obtenerEnvioPorCodigoSeguimiento(String codigoSeguimiento) {
+    public EnvioResponseDto obtenerPorCodigoSeguimiento(String codigoSeguimiento) {
         Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
         return EnvioMapper.toResponseDto(envio);
     }
 
-    /**
-     * Busca y recupera la entidad {@link Envio} correspondiente en la base de datos
-     * utilizando su código de seguimiento.
-     *
-     * @param codigoSeguimiento Código de seguimiento único del envío a buscar.
-     * @return La instancia de la entidad {@link Envio} encontrada.
-     * @throws RecursoNoEncontradoException si no existe ningún envío registrado con el código proporcionado.
-     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<EnvioResponseDto> listarPorEstado(EstadoEnvio estado) {
+        log.debug("Listando envíos por estado: {}", estado);
+        List<Envio> envios = (estado != null)
+                ? envioRepository.findByEstadoEnvio(estado)
+                : envioRepository.findAll();
+
+        return envios.stream()
+                .map(EnvioMapper::toResponseDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public EnvioResponseDto cancelarEnvio(UUID idEnvio) {
+        log.info("Iniciando cancelación para el envío con ID: {}", idEnvio);
+
+        Envio envio = envioRepository.findById(idEnvio)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Envío no encontrado con ID: " + idEnvio));
+
+        if (!EstadoEnvio.PENDIENTE.equals(envio.getEstadoEnvio())) {
+            throw new OperacionInvalidaException("Solo se pueden cancelar envíos en estado PENDIENTE. Estado actual: " + envio.getEstadoEnvio());
+        }
+
+        EstadoEnvio estadoAnterior = envio.getEstadoEnvio();
+        envio.setEstadoEnvio(EstadoEnvio.CANCELADO);
+        Envio envioActualizado = envioRepository.save(envio);
+
+        // Registro del cambio en el histórico de auditoría
+        HistoricoEstadoEnvio historico = HistoricoEstadoEnvio.builder()
+                .codigoSeguimiento(envio.getCodigoSeguimiento())
+                .estadoEnvioAnterior(estadoAnterior)
+                .estadoEnvioNuevo(EstadoEnvio.CANCELADO)
+                .fechaCambioEstado(LocalDateTime.now())
+                .build();
+        historicoEstadoEnvioRepository.save(historico);
+
+        log.info("Envío con ID {} cancelado exitosamente", idEnvio);
+        return EnvioMapper.toResponseDto(envioActualizado);
+    }
+
     protected Envio obtenerEnvioEntityPorCodigoSeguimiento(String codigoSeguimiento) {
         log.debug("Ejecutando consulta de envío con código de seguimiento: {}", codigoSeguimiento);
         return envioRepository.findByCodigoSeguimiento(codigoSeguimiento)
@@ -97,5 +167,4 @@ public class EnvioServiceImpl implements EnvioService {
                     return new RecursoNoEncontradoException("Envío no encontrado");
                 });
     }
-
 }

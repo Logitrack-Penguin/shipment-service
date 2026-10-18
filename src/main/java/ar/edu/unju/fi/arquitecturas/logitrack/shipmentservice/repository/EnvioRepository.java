@@ -1,9 +1,11 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository;
 
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,4 +32,6 @@ public interface EnvioRepository extends JpaRepository<Envio, UUID> {
      * @return {@link Optional} con la instancia del envío en caso de que exista.
      */
     Optional<Envio> findByCodigoSeguimiento(String codigoSeguimiento);
+
+    List<Envio> findByEstadoEnvio(EstadoEnvio estadoEnvio);
 }

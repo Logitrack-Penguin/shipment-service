@@ -1,11 +1,10 @@
-package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto;
+package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.validator.constraints.UniqueElements;
 
 /**
  * Objeto de Transferencia de Datos correspondiente a los clientes para la recepción y validación de la información a

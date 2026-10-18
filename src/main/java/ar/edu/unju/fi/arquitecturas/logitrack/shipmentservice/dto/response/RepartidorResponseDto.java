@@ -1,6 +1,7 @@
-package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto;
+package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response;
 
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.EstadoRepartidor;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoRepartidor;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.EntidadAuditable;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -56,7 +57,7 @@ public class RepartidorResponseDto {
 
     /**
      * Fecha de registro del repartidor en el sistema. Atributo heredado de la clase padre de auditoría
-     * {@link ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.audit.EntidadAuditable}
+     * {@link EntidadAuditable}
      */
     private LocalDateTime fechaCreacion;
 }

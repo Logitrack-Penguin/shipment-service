@@ -1,4 +1,4 @@
-package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.audit;
+package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model;
 
 
 import jakarta.persistence.Column;

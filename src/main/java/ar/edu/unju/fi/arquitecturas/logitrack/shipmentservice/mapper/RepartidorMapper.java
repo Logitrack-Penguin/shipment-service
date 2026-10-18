@@ -1,8 +1,8 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.mapper;
 
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.RepartidorRequestDto;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.RepartidorResponseDto;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.EstadoRepartidor;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.RepartidorRequestDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.RepartidorResponseDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoRepartidor;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Repartidor;
 import java.util.ArrayList;
 
