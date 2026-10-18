@@ -5,6 +5,8 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Direccion;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+import java.util.UUID;
+
 /**
  * Objeto de Transferencia de Datos correspondiente a los envíos para la recepción y validación de la información a
  * la hora de registrar un nuevo envío o actualizar uno ya existente.
@@ -47,4 +49,10 @@ public class EnvioRequestDto {
      */
     @NotNull(message = "La dirección de destino es un campo obligatorio.")
     private Direccion direccionDestino;
+
+    /**
+     * Identificador único del cliente que solicita el envío.
+     */
+    @NotNull(message = "El ID del cliente es obligatorio.")
+    private UUID idCliente;
 }

@@ -6,8 +6,10 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.mapper.EnvioMapper;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Cliente;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEstadoEnvio;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.ClienteRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.EnvioService;
@@ -43,6 +45,7 @@ public class EnvioServiceImpl implements EnvioService {
 
     private final EnvioRepository envioRepository;
     private final HistoricoEstadoEnvioRepository historicoEstadoEnvioRepository;
+    private final ClienteRepository clienteRepository;
 
     /**
      * {@inheritDoc}
@@ -50,7 +53,10 @@ public class EnvioServiceImpl implements EnvioService {
     @Override
     @Transactional
     public EnvioResponseDto registrarEnvio(EnvioRequestDto request) {
-        log.info("Iniciando registro de nuevo envío");
+        log.info("Iniciando registro de nuevo envío para cliente ID: {}", request.getIdCliente());
+
+        Cliente cliente = clienteRepository.findById(request.getIdCliente())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cliente no encontrado con ID: " + request.getIdCliente()));
 
         String codigoSeguimiento = "TRK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String codigoRecepcion = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
@@ -60,6 +66,7 @@ public class EnvioServiceImpl implements EnvioService {
 
         Envio envio = Envio.builder()
                 .codigoSeguimiento(codigoSeguimiento)
+                .cliente(cliente)
                 .peso(request.getPeso())
                 .dimensiones(request.getDimensiones())
                 .tarifa(tarifa)
