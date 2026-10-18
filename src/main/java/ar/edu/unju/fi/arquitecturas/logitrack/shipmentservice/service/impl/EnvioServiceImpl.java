@@ -137,7 +137,7 @@ public class EnvioServiceImpl implements EnvioService {
 
     @Override
     @Transactional(readOnly = true)
-    public EnvioResponseDto obtenerPorCodigoSeguimiento(String codigoSeguimiento) {
+    public EnvioResponseDto obtenerEnvioPorCodigoSeguimiento(String codigoSeguimiento) {
         Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
         return EnvioMapper.toResponseDto(envio);
     }

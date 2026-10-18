@@ -41,8 +41,8 @@ public class EnvioController {
      * Consultar envío por su código de seguimiento (Tracking Code).
      */
     @GetMapping("/tracking/{codigoSeguimiento}")
-    public ResponseEntity<EnvioResponseDto> obtenerPorCodigoSeguimiento(@PathVariable String codigoSeguimiento) {
-        return ResponseEntity.ok(envioService.obtenerPorCodigoSeguimiento(codigoSeguimiento));
+    public ResponseEntity<EnvioResponseDto> obtenerEnvioPorCodigoSeguimiento(@PathVariable String codigoSeguimiento) {
+        return ResponseEntity.ok(envioService.obtenerEnvioPorCodigoSeguimiento(codigoSeguimiento));
     }
 
     /**

@@ -60,7 +60,7 @@ public interface EnvioService {
      * @return DTO de respuesta del envío.
      * @throws RecursoNoEncontradoException Si no existe el código de seguimiento.
      */
-    EnvioResponseDto obtenerPorCodigoSeguimiento(String codigoSeguimiento);
+    EnvioResponseDto obtenerEnvioPorCodigoSeguimiento(String codigoSeguimiento);
 
     /**
      * Lista los envíos registrados filtrados opcionalmente por su estado actual.
