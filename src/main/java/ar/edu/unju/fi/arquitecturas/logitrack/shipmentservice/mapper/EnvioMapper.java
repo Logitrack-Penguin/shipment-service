@@ -67,12 +67,12 @@ public class EnvioMapper {
                         envio.getCliente().getNombre(),
                         envio.getCliente().getDni()
                 ))
-                .repartidorAsignado(String.format(
+                .repartidorAsignado(envio.getRepartidor() != null ? String.format(
                         "Nombre: %s, %s - DNI: %s",
                         envio.getRepartidor().getApellido(),
                         envio.getRepartidor().getNombre(),
                         envio.getRepartidor().getDni()
-                ))
+                ) : "Sin repartidor asignado")
                 .estadoEnvio(envio.getEstadoEnvio())
                 .fechaEstimadaEntrega(envio.getFechaEstimadaEntrega())
                 .codigoRecepcion(envio.getCodigoRecepcion())

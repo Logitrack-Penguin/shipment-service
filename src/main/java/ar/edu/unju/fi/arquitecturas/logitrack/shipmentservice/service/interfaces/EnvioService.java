@@ -79,4 +79,15 @@ public interface EnvioService {
      * @throws OperacionInvalidaException Si el envío no está en estado PENDIENTE.
      */
     EnvioResponseDto cancelarEnvio(UUID idEnvio);
+
+    /**
+     * Asigna un repartidor activo a un envío registrado que se encuentre en estado PENDIENTE.
+     *
+     * @param idEnvio Identificador único del envío.
+     * @param idRepartidor Identificador único del repartidor activo.
+     * @return DTO de respuesta con la información del envío actualizado.
+     * @throws RecursoNoEncontradoException Si el envío o el repartidor no existen.
+     * @throws OperacionInvalidaException Si el envío no está PENDIENTE o el repartidor no está ACTIVO.
+     */
+    EnvioResponseDto asignarRepartidor(UUID idEnvio, UUID idRepartidor);
 }
