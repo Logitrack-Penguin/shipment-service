@@ -12,6 +12,7 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEst
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.ClienteRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.RepartidorRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.EnvioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +47,7 @@ public class EnvioServiceImpl implements EnvioService {
     private final EnvioRepository envioRepository;
     private final HistoricoEstadoEnvioRepository historicoEstadoEnvioRepository;
     private final ClienteRepository clienteRepository;
+    private final RepartidorRepository repartidorRepository;
 
     /**
      * {@inheritDoc}
@@ -214,4 +216,39 @@ public class EnvioServiceImpl implements EnvioService {
                     return new RecursoNoEncontradoException("Envío no encontrado");
                 });
     }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional
+    public EnvioResponseDto asignarRepartidor(UUID idEnvio, UUID idRepartidor) {
+        log.info("Iniciando asignación de repartidor ID: {} al envío ID: {}", idRepartidor, idEnvio);
+
+        Envio envio = envioRepository.findById(idEnvio)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el Envío con ID: " + idEnvio));
+
+        if (!EstadoEnvio.PENDIENTE.equals(envio.getEstadoEnvio())) {
+            throw new OperacionInvalidaException(
+                    "Solo se pueden asignar repartidores a envíos en estado PENDIENTE. Estado actual: " + envio.getEstadoEnvio()
+            );
+        }
+
+        ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Repartidor repartidor = repartidorRepository.findById(idRepartidor)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el Repartidor con ID: " + idRepartidor));
+
+        if (!ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoRepartidor.ACTIVO.equals(repartidor.getEstadoRepartidor())) {
+            throw new OperacionInvalidaException(
+                    "No se puede asignar un repartidor que no esté en estado ACTIVO. Estado actual: " + repartidor.getEstadoRepartidor()
+            );
+        }
+
+        envio.setRepartidor(repartidor);
+        Envio envioActualizado = envioRepository.save(envio);
+
+        log.info("Repartidor con ID {} asignado exitosamente al envío {}", idRepartidor, idEnvio);
+        return EnvioMapper.toResponseDto(envioActualizado);
+    }
+
 }
