@@ -4,11 +4,25 @@ TRUNCATE TABLE histórico_estado_envíos;
 TRUNCATE TABLE envíos;
 TRUNCATE TABLE repartidores;
 TRUNCATE TABLE clientes;
+TRUNCATE TABLE configuración_tarifa_base;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ==========================================================
--- 1. CLIENTES
+-- 1. CONFIGURACIÓN DE TARIFA BASE
+-- ==========================================================
+INSERT INTO configuración_tarifa_base (
+    id_config_tarifa_base, fecha_creación, fecha_ultima_modificacion,
+    tarifa_base, costo_por_kg, costo_por_km, costo_por_cm_cubo
+)
+VALUES
+    (
+        UUID_TO_BIN('11111111-9c0b-4ef8-bb6d-6bb9bd380f01'), NOW(), NOW(),
+        2500.00, 150.50, 45.00, 5.25
+    );
+
+-- ==========================================================
+-- 2. CLIENTES
 -- ==========================================================
 INSERT INTO clientes (id, fecha_creación, fecha_ultima_modificacion, apellido, dni, email, nombre, teléfono)
 VALUES
@@ -18,7 +32,7 @@ VALUES
     (UUID_TO_BIN('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44'), NOW(), NOW(), 'Martínez', '42333444', 'ana.martinez@email.com', 'Ana', '3884567890');
 
 -- ==========================================================
--- 2. REPARTIDORES
+-- 3. REPARTIDORES
 -- ==========================================================
 INSERT INTO repartidores (id, fecha_creación, fecha_ultima_modificacion, apellido, dni, estado_repartidor, nombre, teléfono, tipo_vehículo)
 VALUES
@@ -26,7 +40,7 @@ VALUES
     (UUID_TO_BIN('222bc999-9c0b-4ef8-bb6d-6bb9bd380222'), NOW(), NOW(), 'Melano', '30222333', 1, 'Rosa', '388222333', 'AUTO');
 
 -- ==========================================================
--- 3. ENVÍOS
+-- 4. ENVÍOS
 -- ==========================================================
 INSERT INTO envíos (
     id, fecha_creación, fecha_ultima_modificacion,
@@ -58,7 +72,7 @@ VALUES
     );
 
 -- ==========================================================
--- 4. HISTÓRICO DE ESTADOS DE ENVÍOS (Sin valores NULL)
+-- 5. HISTÓRICO DE ESTADOS DE ENVÍOS
 -- ==========================================================
 INSERT INTO histórico_estado_envíos (
     id_historico_estado_envio, código_seguimiento,
