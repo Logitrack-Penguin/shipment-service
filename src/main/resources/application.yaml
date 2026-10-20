@@ -40,7 +40,7 @@ spring:
     init:
       # Fuerza la ejecución automática del archivo data.sql al arrancar el microservicio
       mode: always
-
+# =====================================================================
 # =====================================================================
 # Configuración de Documentación Interactiva (OpenAPI 3 / Swagger)
 # =====================================================================
