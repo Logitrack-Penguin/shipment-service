@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base-url}}/repartidores/"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"dni\": 20551437,\r
+
+    \  \"nombre\": \"Jorge José\",\r
+
+    \  \"apellido\": \"Hernández\",\r
+
+    \  \"telefono\": \"3885394760\",\r
+
+    \  \"tipoVehiculo\": \"camioneta\"\r
+
+    }"
+order: 3763814974109750

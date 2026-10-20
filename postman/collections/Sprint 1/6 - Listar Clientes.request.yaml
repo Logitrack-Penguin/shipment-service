@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base-url}}/clientes/"
+method: GET
+order: 4477043401626254

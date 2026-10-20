@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base-url}}/reapartidores"
+method: GET
+order: 4300528448397703
