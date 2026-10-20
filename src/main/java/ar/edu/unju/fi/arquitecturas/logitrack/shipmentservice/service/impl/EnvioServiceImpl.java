@@ -1,18 +1,21 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.impl;
 
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.ConfigTarifaBaseResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.*;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.mapper.EnvioMapper;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Cliente;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.ClienteRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.RepartidorRepository;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.ConfigTarifaBaseService;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.GeocodingService;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.EnvioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +51,9 @@ public class EnvioServiceImpl implements EnvioService {
     private final HistoricoEstadoEnvioRepository historicoEstadoEnvioRepository;
     private final ClienteRepository clienteRepository;
     private final RepartidorRepository repartidorRepository;
+    private final GeocodingService geocodingService;
+    private final ConfigTarifaBaseService configTarifaBaseService;
+    private final static double radioTierraKm = 6371.0;
 
     /**
      * {@inheritDoc}
@@ -63,8 +69,8 @@ public class EnvioServiceImpl implements EnvioService {
         String codigoSeguimiento = "TRK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String codigoRecepcion = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 
-        Double volumen = request.getDimensiones().getAncho() * request.getDimensiones().getAlto() * request.getDimensiones().getLargo();
-        Double tarifa = (request.getPeso() * 100) + (volumen * 0.05);
+        double volumen = request.getDimensiones().getAncho() * request.getDimensiones().getAlto() * request.getDimensiones().getLargo();
+        double tarifa = (request.getPeso() * 100) + (volumen * 0.05);
 
         Envio envio = Envio.builder()
                 .codigoSeguimiento(codigoSeguimiento)
@@ -143,6 +149,35 @@ public class EnvioServiceImpl implements EnvioService {
     /**
      * {@inheritDoc}
      */
+    @Override
+    @Transactional
+    public double calcularTarifa(Direccion direccionOrigen, Direccion direccionDestino, double peso, double volumen) {
+        var coordenadasOrigen = geocodingService.obtenerCoordenadas(
+                direccionOrigen.getCalle(),
+                direccionOrigen.getNumero(),
+                direccionOrigen.getCiudad()
+        );
+        var coordenadasDestino = geocodingService.obtenerCoordenadas(
+                direccionDestino.getCalle(),
+                direccionDestino.getNumero(),
+                direccionDestino.getCiudad()
+        );
+        double distanciaTotalAproximada = calcularDistanciaKm(
+                coordenadasOrigen.latitud(),
+                coordenadasOrigen.longitud(),
+                coordenadasDestino.latitud(),
+                coordenadasDestino.longitud()
+        );
+        ConfigTarifaBaseResponseDto configActualResponseDto = configTarifaBaseService.obtenerConfiguracionVigente();
+        return configActualResponseDto.getTarifaBase() +
+                configActualResponseDto.getCostoPorKm() * distanciaTotalAproximada +
+                configActualResponseDto.getCostoPorKg() * peso +
+                configActualResponseDto.getCostoPorCmCubo() * volumen;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
 
     @Override
     @Transactional(readOnly = true)
@@ -200,23 +235,18 @@ public class EnvioServiceImpl implements EnvioService {
     }
 
     /**
-     * Busca y recupera la entidad {@link Envio} correspondiente en la base de datos
-     * utilizando su código de seguimiento.
-     *
-     * @param codigoSeguimiento Código de seguimiento único del envío a buscar.
-     * @return La instancia de la entidad {@link Envio} encontrada.
-     * @throws RecursoNoEncontradoException si no existe ningún envío registrado con el código proporcionado.
+     * {@inheritDoc}
      */
-
-    protected Envio obtenerEnvioEntityPorCodigoSeguimiento(String codigoSeguimiento) {
-        log.debug("Ejecutando consulta de envío con código de seguimiento: {}", codigoSeguimiento);
-        return envioRepository.findByCodigoSeguimiento(codigoSeguimiento)
-                .orElseThrow(() -> {
-                    log.warn("Búsqueda infructuosa: No existe un envío con el código de seguimiento: {}", codigoSeguimiento);
-                    return new RecursoNoEncontradoException("Envío no encontrado");
-                });
+    @Override
+    @Transactional
+    public double calcularDistanciaKm(double lat1, double lon1, double lat2, double lon2) {
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return c * radioTierraKm;
     }
-
 
     /**
      * {@inheritDoc}
@@ -251,4 +281,21 @@ public class EnvioServiceImpl implements EnvioService {
         return EnvioMapper.toResponseDto(envioActualizado);
     }
 
+    /**
+     * Busca y recupera la entidad {@link Envio} correspondiente en la base de datos
+     * utilizando su código de seguimiento.
+     *
+     * @param codigoSeguimiento Código de seguimiento único del envío a buscar.
+     * @return La instancia de la entidad {@link Envio} encontrada.
+     * @throws RecursoNoEncontradoException si no existe ningún envío registrado con el código proporcionado.
+     */
+
+    protected Envio obtenerEnvioEntityPorCodigoSeguimiento(String codigoSeguimiento) {
+        log.debug("Ejecutando consulta de envío con código de seguimiento: {}", codigoSeguimiento);
+        return envioRepository.findByCodigoSeguimiento(codigoSeguimiento)
+                .orElseThrow(() -> {
+                    log.warn("Búsqueda infructuosa: No existe un envío con el código de seguimiento: {}", codigoSeguimiento);
+                    return new RecursoNoEncontradoException("Envío no encontrado");
+                });
+    }
 }
