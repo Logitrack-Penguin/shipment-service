@@ -1,0 +1,50 @@
+$kind: http-request
+url: "{{base-url}}/envios"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"peso\": 2.5,\r
+
+    \  \"dimensiones\": {\r
+
+    \    \"alto\": 10.0,\r
+
+    \    \"ancho\": 20.0,\r
+
+    \    \"profundidad\": 15.0\r
+
+    \  },\r
+
+    \  \"direccionOrigen\": {\r
+
+    \    \"calle\": \"Av. Principal\",\r
+
+    \    \"numero\": 123,\r
+
+    \    \"ciudad\": \"Jujuy\"\r
+
+    \  },\r
+
+    \  \"direccionDestino\": {\r
+
+    \    \"calle\": \"Calle Secundaria\",\r
+
+    \    \"numero\": 456,\r
+
+    \    \"ciudad\": \"Salta\"\r
+
+    \  },\r
+
+    \  \"dni\": \"12345678\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: ""
+    language: text/javascript
+  - type: beforeRequest
+    code: ""
+    language: text/javascript
+order: 1792515215133
