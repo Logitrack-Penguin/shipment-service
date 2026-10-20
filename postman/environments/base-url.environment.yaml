@@ -1,0 +1,5 @@
+name: base-url
+values:
+  - key: base-url
+    value: ''
+color: 120

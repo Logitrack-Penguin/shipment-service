@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{base-url}}/clientes"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"dni\": 26534208,\r
+
+    \  \"nombre\": \"Fabián\",\r
+
+    \  \"apellido\": \"Cardozo\",\r
+
+    \  \"email\": \"fabiCardozo@gmail.com\",\r
+
+    \  \"telefono\": \"3882498015\"\r
+
+    }"
+order: 1000

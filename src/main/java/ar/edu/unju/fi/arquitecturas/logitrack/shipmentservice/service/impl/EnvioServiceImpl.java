@@ -70,7 +70,7 @@ public class EnvioServiceImpl implements EnvioService {
         String codigoRecepcion = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
 
         double volumen = request.getDimensiones().getAncho() * request.getDimensiones().getAlto() * request.getDimensiones().getLargo();
-        double tarifa = (request.getPeso() * 100) + (volumen * 0.05);
+        double tarifa = (calcularTarifa(request.getDireccionOrigen(), request.getDireccionDestino(), request.getPeso(), volumen));
 
         Envio envio = Envio.builder()
                 .codigoSeguimiento(codigoSeguimiento)
@@ -89,7 +89,7 @@ public class EnvioServiceImpl implements EnvioService {
 
         HistoricoEstadoEnvio historico = HistoricoEstadoEnvio.builder()
                 .codigoSeguimiento(codigoSeguimiento)
-                .estadoEnvioAnterior(null)
+                .estadoEnvioAnterior(EstadoEnvio.PENDIENTE)
                 .estadoEnvioNuevo(EstadoEnvio.PENDIENTE)
                 .fechaCambioEstado(LocalDateTime.now())
                 .build();

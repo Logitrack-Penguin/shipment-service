@@ -1,0 +1,6 @@
+$kind: http-request
+url: "{{base-url}}/repartidores?estado=ACTIVO"
+method: GET
+queryParams:
+  estado: ACTIVO
+order: 3000
