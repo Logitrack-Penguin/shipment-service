@@ -18,7 +18,7 @@ import java.util.UUID;
  *
  * @author Logitrack-Penguin
  * @version 1.0.0
- * @since 2026-10-20
+ * @since 20-10-2026
  */
 @RestController
 @RequestMapping("/api/v1/clientes")
