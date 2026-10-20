@@ -5,7 +5,9 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.Envio
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Direccion;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -54,6 +56,19 @@ public interface EnvioService {
     EnvioResponseDto cambiarEstado(String codigoSeguimiento, String codigoRecepcion);
 
     /**
+     * Encargado de calcular la tarifa del envío en función a la distancia entre el origen y destino, el peso y volumen del paquete y
+     * la configuración de tarifas base vigente al momento del registro del envío.
+     *
+     * @param direccionOrigen Dirección de origen del envío.
+     * @param direccionDestino Dirección de destino del envío.
+     * @param peso Peso en kilogramos del paquete.
+     * @param volumen Volumen en centímetros cubo del paquete.
+     * @return {@link Double} El valor total de la tarifa en función de la configuración de tarifa base vigente y los parámetros ingresados.
+     */
+    @Transactional
+    double calcularTarifa(Direccion direccionOrigen, Direccion direccionDestino, double peso, double volumen);
+
+    /**
      * Localiza un envío a partir de su código de seguimiento público.
      *
      * @param codigoSeguimiento Código de seguimiento único del envío.
@@ -79,6 +94,19 @@ public interface EnvioService {
      * @throws OperacionInvalidaException Si el envío no está en estado PENDIENTE.
      */
     EnvioResponseDto cancelarEnvio(UUID idEnvio);
+
+    /**
+     * Encargado de calcular la distancia entre dos coordenadas (correspondientes a las direcciones de origen y destino).
+     * El cálculo de esa distancia la hace mediante el uso de la fórmula de Haversine que calcula la distancia entre dos puntos
+     * sobre una esfera (en este caso la tierra).
+     *
+     * @param lat1 Latitud de la coordenada de origen.
+     * @param lon1 Longitud de la coordenada de origen.
+     * @param lat2 Latitud de la coordenada de destino.
+     * @param lon2 Longitud de la coordenada de destino.
+     * @return Distancia en kilómetros entre las dos coordenadas.
+     */
+    double calcularDistanciaKm(double lat1, double lon1, double lat2, double lon2);
 
     /**
      * Asigna un repartidor activo a un envío registrado que se encuentre en estado PENDIENTE.
