@@ -3,6 +3,7 @@ package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.impl;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.GeocodingService;
+import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -16,6 +17,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @see GeocodingService
  * @see Coordenadas
  */
+@Service
 public class GeocodingServiceImpl implements GeocodingService {
 
     /** Cliente HTTP utilizado para realizar las peticiones a la API de Nominatim. */
