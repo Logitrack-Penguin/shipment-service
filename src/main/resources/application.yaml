@@ -3,10 +3,10 @@ spring:
     name: shipment-service
 
   datasource:
-    url: jdbc:mysql://localhost:3306/shipment_service?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: admin_logitrack
-    password: 12345
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/shipment_service?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:admin_logitrack}
+    password: ${DB_PASSWORD:12345}
+    driver-class-name: ${DB_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
 
   jpa:
     hibernate:
