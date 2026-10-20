@@ -32,4 +32,18 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
      * @return {@code true} si existe, {@code false} en caso contrario.
      */
     boolean existsByDni(String dni);
+    /**
+     * Verifica si ya existe un cliente registrado con el correo electrónico proporcionado.
+     *
+     * @param email Correo electrónico a verificar.
+     * @return {@code true} si existe un registro con ese email, {@code false} en caso contrario.
+     */
+    boolean existsByEmail(String email);
+    /**
+     * Verifica si ya existe un cliente registrado con el numero de telefono proporcionado.
+     *
+     * @param telefono numero telefonico a verificar.
+     * @return {@code true} si existe un registro con ese telefono, {@code false} en caso contrario.
+     */
+    boolean existsByTelefono(String telefono);
 }
