@@ -1,0 +1,58 @@
+$kind: http-request
+url: "{{base-url}}/envios"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"idCliente\": \"79bdae85-2949-49b6-80d8-47568ec15ecd\",\r
+
+    \  \"peso\": 2.5,\r
+
+    \  \"dimensiones\": {\r
+
+    \    \"alto\": 10.0,\r
+
+    \    \"ancho\": 20.0,\r
+
+    \    \"largo\": 15.0\r
+
+    \  },\r
+
+    \  \"direccionOrigen\": {\r
+
+    \    \"calle\": \"Belgrano\",\r
+
+    \    \"numero\": 450,\r
+
+    \    \"ciudad\": \"San Salvador de Jujuy\",\r
+
+    \    \"codigoPostal\": \"Y4600\",\r
+
+    \    \"observaciones\": \"Casa con rejas verdes\"\r
+
+    \  },\r
+
+    \  \"direccionDestino\": {\r
+
+    \    \"calle\": \"España\",\r
+
+    \    \"numero\": 1250,\r
+
+    \    \"ciudad\": \"Salta\",\r
+
+    \    \"codigoPostal\": \"A4400\",\r
+
+    \    \"observaciones\": \"Timbre 2B\"\r
+
+    \  }\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: ""
+    language: text/javascript
+  - type: beforeRequest
+    code: ""
+    language: text/javascript
+order: 1000

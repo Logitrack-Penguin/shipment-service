@@ -89,7 +89,7 @@ public class EnvioServiceImpl implements EnvioService {
 
         HistoricoEstadoEnvio historico = HistoricoEstadoEnvio.builder()
                 .codigoSeguimiento(codigoSeguimiento)
-                .estadoEnvioAnterior(null)
+                .estadoEnvioAnterior(EstadoEnvio.PENDIENTE)
                 .estadoEnvioNuevo(EstadoEnvio.PENDIENTE)
                 .fechaCambioEstado(LocalDateTime.now())
                 .build();
