@@ -1,5 +1,5 @@
 $kind: http-request
-url: "{{base-url}}/repartidores/"
+url: "{{base-url}}/repartidores"
 method: POST
 body:
   type: json

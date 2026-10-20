@@ -1,5 +1,5 @@
 $kind: http-request
-url: "{{base-url}}/envios/"
+url: "{{base-url}}/envios"
 method: POST
 body:
   type: json

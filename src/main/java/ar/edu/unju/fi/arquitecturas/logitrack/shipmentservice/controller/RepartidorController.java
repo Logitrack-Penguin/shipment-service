@@ -23,7 +23,7 @@ import java.util.UUID;
  * @see RepartidorService
  */
 @RestController
-@RequestMapping("/api/repartidores")
+@RequestMapping("/api/v1/repartidores")
 @RequiredArgsConstructor
 public class RepartidorController {
 
