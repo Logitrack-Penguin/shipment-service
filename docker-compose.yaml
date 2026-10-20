@@ -1,0 +1,31 @@
+services:
+  shipment-service:
+    image: shipment-service:1.0
+    ports:
+      - 8080:8080
+    environment:
+      DB_URL: "jdbc:mysql://shipment-database:3306/shipment_service?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+      DB_USERNAME: "${MYSQL_USER:-admin_logitrack}"
+      DB_PASSWORD: "${MYSQL_PASSWORD:-12345}"
+      DB_DRIVER_CLASS_NAME: "com.mysql.cj.jdbc.Driver"
+    depends_on:
+      shipment-database:
+        condition: service_healthy
+
+  shipment-database:
+    image: mysql:8.4.0
+    container_name: mysql-8.4.0
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+      MYSQL_DATABASE: "shipment_service"
+      MYSQL_USER: "${MYSQL_USER:-admin_logitrack}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-12345}"
+    ports:
+      - 3306:3306
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p\"$$MYSQL_ROOT_PASSWORD\"--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
