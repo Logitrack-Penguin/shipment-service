@@ -65,7 +65,7 @@ public class Cliente extends EntidadAuditable{
     /**
      * Número telefónico de contacto del cliente.
      */
-    @Column(name = "teléfono", nullable = false, unique = true)
+    @Column(name = "telefono", nullable = false, unique = true)
     private String telefono;
 
     /**
