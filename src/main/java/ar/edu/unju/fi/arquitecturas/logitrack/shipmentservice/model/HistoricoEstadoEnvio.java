@@ -22,7 +22,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Builder
-@Table(name = "histórico_estado_envíos")
+@Table(name = "historico_estado_envios")
 public class HistoricoEstadoEnvio {
 
     /**
@@ -35,21 +35,21 @@ public class HistoricoEstadoEnvio {
     /**
      * Código de seguimiento del envío correspondiente.
      */
-    @Column(name = "código_seguimiento", nullable = false, updatable = false)
+    @Column(name = "codigo_seguimiento", nullable = false, updatable = false)
     private String codigoSeguimiento;
 
     /**
      * Estado del envío previo al cambio.
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado_envío_anterior", nullable = false)
+    @Column(name = "estado_envio_anterior", nullable = false)
     private EstadoEnvio estadoEnvioAnterior;
 
     /**
      * Estado del envío posterior al cambio.
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado_envío_nuevo", nullable = false)
+    @Column(name = "estado_envio_nuevo", nullable = false)
     private EstadoEnvio estadoEnvioNuevo;
 
     /**

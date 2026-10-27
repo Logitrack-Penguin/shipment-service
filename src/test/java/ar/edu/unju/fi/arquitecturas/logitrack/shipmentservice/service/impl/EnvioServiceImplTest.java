@@ -3,7 +3,6 @@ package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.impl;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoRepartidor;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Cliente;
@@ -11,7 +10,6 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Dimensiones;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Direccion;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEstadoEnvio;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Repartidor;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.ClienteRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
@@ -48,7 +46,6 @@ import static org.mockito.Mockito.*;
  * @see EnvioRepository
  * @see HistoricoEstadoEnvioRepository
  * @see ClienteRepository
- * @see RepartidorRepository
  */
 @ExtendWith(MockitoExtension.class)
 class EnvioServiceImplTest {
