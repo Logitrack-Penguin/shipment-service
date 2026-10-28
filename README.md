@@ -27,16 +27,6 @@ classDiagram
         +realizarEnvio()
     }
 
-    class Repartidor {
-        -UUID idRepartidor
-        -String dni
-        -String nombre
-        -String apellido
-        -String telefono
-        -String tipoVehiculo
-        -EstadoRepartidor estadoRepartidor
-        +estaDisponible()
-    }
 
     class Envio {
         -UUID idEnvio
@@ -70,12 +60,6 @@ classDiagram
         +obtenerCoordenadas()
     }
 
-    class EstadoRepartidor {
-        <<enumeration>>
-        ACTIVO
-        INACTIVO
-    }
-
     class EstadoEnvio {
         <<enumeration>>
         PENDIENTE
@@ -86,9 +70,6 @@ classDiagram
 
     %% Relaciones
     Cliente "1" --> "*" Envio : realiza
-    Repartidor "1" --> "*" Envio : asignado_a
-    Repartidor --> EstadoRepartidor : estado
-    
     Envio "1" *-- "1" Dimensiones : dimensiones
     Envio "1" *-- "1" Direccion : destino
     Envio "1" *-- "1" Direccion : origen
@@ -107,10 +88,6 @@ El sistema centraliza la operativa de recepción, procesamiento, asignación y e
   * *Atributos*: Identificador único (`idCliente`), documento (`dni`), datos personales y de contacto (`nombre`, `apellido`, `email`, `telefono`).
   * *Métodos*: `realizarEnvio()`.
 
-* **`Repartidor`**: Es el encargado de transportar y entregar los envíos asignados.
-  * *Atributos*: Identificador único (`idRepartidor`), información personal (`dni`, `nombre`, `apellido`, `telefono`), vehículo (`tipoVehiculo`) y su estado operacional (`estadoRepartidor`).
-  * *Métodos*: `estaDisponible()`.
-
 * **`Envio`**: Es el agregado principal del sistema, representa el paquete o encomienda a ser entregado.
   * *Atributos*: Identificador (`idEnvio`), código único de rastreo (`codigoSeguimiento`), peso, precio (`tarifa`), estado actual (`estadoEnvio`), fecha estimada de recepción y un código de seguridad para la entrega (`codigoRecepcion`).
   * *Métodos*: `calcularTarifa()`, `puedeCancelarse()`, `asignarRepartidor()`, `actualizarEstado()`.
@@ -128,10 +105,6 @@ Son objetos inmutables definidos por sus atributos y no por una identidad propia
 
 ### 3. Enumeraciones (Enumerations)
 
-* **`EstadoRepartidor`**: Define la disponibilidad operacional del repartidor.
-  * `ACTIVO`
-  * `INACTIVO`
-
 * **`EstadoEnvio`**: Representa el ciclo de vida por el que pasa un envío.
   * `PENDIENTE`
   * `EN_RUTA`
@@ -143,7 +116,6 @@ Son objetos inmutables definidos por sus atributos y no por una identidad propia
 ### 4. Relaciones y Composición
 
 1. **Cliente → Envio (`1` a `*`)**: Un cliente puede realizar uno o varios envíos (*realiza*).
-2. **Repartidor → Envio (`1` a `*`)**: Un repartidor puede tener múltiples envíos asignados (*asignado_a*).
 3. **Envio 🡒 Dimensiones (Composición `1:1`)**: Cada envío se compone intrínsecamente de un conjunto de dimensiones físicas.
 4. **Envio 🡒 Direccion (Composición `1:1` doble)**: Un envío posee obligatoriamente una dirección de **origen** y una dirección de **destino**.
 
@@ -170,6 +142,25 @@ Durante este primer sprint, se han completado e integrado las siguientes funcion
 
 ---
 
+## 🚀 Funcionalidades del Sprint 2
+
+Durante este segundo sprint, se han completado e integrado las siguientes funcionalidades y refactorizaciones arquitectónicas:
+
+* ✂️ **Desacoplamiento de Repartidores (`feat/desacoplamiento-repartidores`):** Eliminación de la administración directa de repartidores dentro de shipment-service, reemplazando las entidades por referencias lógicas mediante identificadores únicos.
+
+* 🔄 **Comunicación Inter-Microservicios REST (`feat/comunicacion-courier-service`):** Integración sincrónica mediante HTTP/REST con courier-service para consultar y validar la disponibilidad en tiempo real de los repartidores durante la asignación.
+
+* 🔐 **Seguridad y Control de Acceso por JWT (`feat/proteccion-jwt-seguridad`):** Validación descentralizada de tokens JWT emitiendo/verificando firmas para aplicar autorización basada en roles (`ADMIN, CLIENTE, REPARTIDOR`) y pertenencia de recursos sin sobrecargar el servicio con llamadas HTTP adicionales.
+
+* ⚙️ **Configuración Centralizada con Config Server (`feat/spring-cloud-config`):** Externalización de las configuraciones del microservicio (`application.yml`) hacia un servidor centralizado con Spring Cloud Config Server, soportando perfiles de entornos (`dev / prod`).
+
+* 🐳 **Contenerización Multietapa y Docker Compose (`feat/dockerizacion-e-infraestructura`):** Creación de un Dockerfile optimizado en múltiples etapas para Java 25 y orquestación con docker-compose.yml integrando el microservicio, la base de datos MySQL y la red entre contenedores.
+
+* 📦 **Publicación e Infraestructura Distribuida (`feat/publicacion-docker-hub`):** Etiquetado y publicación de las imágenes oficiales del microservicio en Docker Hub para su despliegue y consumo remoto simplificado.
+
+
+---
+
 ## 🛠️ Tecnologías Utilizadas
 
 * **Lenguaje:** Java 25
@@ -190,6 +181,7 @@ Durante este primer sprint, se han completado e integrado las siguientes funcion
 
 - 📁 **shipment-service/**
     * 📁 **src/main/java/com/example/shipment/**
+        * 📁 **client/** — Comunicación REST con el courier-service
         * 📁 **controller/** — Controladores REST y exposición de endpoints de la API
         * 📁 **service/** — Contratos de servicio, lógica de negocio e implementaciones
         * 📁 **model/** — Entidades de dominio, mapeo JPA/ORM y enums de estado
