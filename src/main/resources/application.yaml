@@ -4,7 +4,8 @@
 spring:
   application:
     name: shipment-service
-
+  config:
+    import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
   # -----------------------------------------------------------------
   # Configuración de la Conexión a la Base de Datos Relacional (MySQL)
   # -----------------------------------------------------------------
