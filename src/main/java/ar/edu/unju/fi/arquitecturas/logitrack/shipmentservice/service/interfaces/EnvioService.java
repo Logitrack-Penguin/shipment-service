@@ -1,13 +1,13 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces;
 
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioCourierResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Direccion;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -68,14 +68,6 @@ public interface EnvioService {
     double calcularTarifa(Direccion direccionOrigen, Direccion direccionDestino, double peso, double volumen);
 
     /**
-     * Permite obtener un envío con los datos de su repartidor asignado a partir del código de seguimiento
-     *
-     * @param codigoSeguimiento Código de seguimiento del envío.
-     * @return {@link EnvioResponseDto} con toda la información del envío y el repartidor asignado al mismo.
-     */
-    EnvioResponseDto obtenerEnvioConRepartidor(String codigoSeguimiento);
-
-    /**
      * Localiza un envío a partir de su código de seguimiento público.
      *
      * @param codigoSeguimiento Código de seguimiento único del envío.
@@ -124,5 +116,5 @@ public interface EnvioService {
      * @throws RecursoNoEncontradoException Si el envío o el repartidor no existen.
      * @throws OperacionInvalidaException Si el envío no está PENDIENTE o el repartidor no está ACTIVO.
      */
-    EnvioResponseDto asignarRepartidor(UUID idEnvio, String dniRepartidor);
+    EnvioCourierResponseDto asignarRepartidor(UUID idEnvio, String dniRepartidor);
 }

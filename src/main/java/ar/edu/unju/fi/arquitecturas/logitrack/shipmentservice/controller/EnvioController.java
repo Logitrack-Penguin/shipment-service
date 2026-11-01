@@ -1,6 +1,7 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.controller;
 
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioCourierResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.EnvioService;
@@ -64,5 +65,10 @@ public class EnvioController {
     @PatchMapping("/{idEnvio}/cancelar")
     public ResponseEntity<EnvioResponseDto> cancelarEnvio(@PathVariable UUID idEnvio) {
         return ResponseEntity.ok(envioService.cancelarEnvio(idEnvio));
+    }
+
+    @PutMapping("/{idEnvio}/asignarRepartidor")
+    public ResponseEntity<EnvioCourierResponseDto> asignarRepartidor(@PathVariable UUID idEnvio, String dniRepartidor){
+        return ResponseEntity.ok(envioService.asignarRepartidor(idEnvio, dniRepartidor));
     }
 }

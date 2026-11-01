@@ -1,8 +1,6 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.mapper;
 
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.client.CourierClient;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.CourierResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
 
@@ -47,42 +45,7 @@ public class EnvioMapper {
                 .build();
     }
 
-    /**
-     * Convierte una instancia concreta de la jerarquía {@link Envio} en su correspondiente DTO de respuesta.
-     *
-     * @param envio Instancia de {@link Envio} persistida en base de datos.
-     * @return {@link EnvioResponseDto}
-     */
-    public static EnvioResponseDto toResponseDto(Envio envio, CourierResponseDto repartidorAsignado){
-        if(envio == null) return null;
-
-        return EnvioResponseDto.builder()
-                .idEnvio(envio.getIdEnvio())
-                .codigoSeguimiento(envio.getCodigoSeguimiento())
-                .peso(envio.getPeso())
-                .dimensiones(envio.getDimensiones())
-                .tarifa(envio.getTarifa())
-                .remitente(String.format(
-                        "Nombre: %s, %s - DNI: %s",
-                        envio.getCliente().getApellido(),
-                        envio.getCliente().getNombre(),
-                        envio.getCliente().getDni()
-                ))
-                .repartidorAsignado(String.format(
-                        "Nombre: %s - DNI: %s - Teléfono: %s - Vehiculo: %s",
-                        repartidorAsignado.getNombreCompleto(),
-                        repartidorAsignado.getDni(),
-                        repartidorAsignado.getTelefono(),
-                        repartidorAsignado.getTipoVehiculo()
-                ))
-                .estadoEnvio(envio.getEstadoEnvio())
-                .fechaEstimadaEntrega(envio.getFechaEstimadaEntrega())
-                .codigoRecepcion(envio.getCodigoRecepcion())
-                .direccionOrigen(envio.getDireccionOrigen())
-                .direccionDestino(envio.getDireccionDestino())
-                .fechaCreacion(envio.getFechaCreacion())
-                .build();
-    }public static EnvioResponseDto toResponseDto(Envio envio){
+    public static EnvioResponseDto toResponseDto(Envio envio){
         if(envio == null) return null;
 
         return EnvioResponseDto.builder()
