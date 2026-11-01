@@ -19,7 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Builder
-@Table(name = "configuración_tarifa_base")
+@Table(name = "configuracion_tarifa_base")
 public class ConfigTarifaBase extends EntidadAuditable {
 
     /**

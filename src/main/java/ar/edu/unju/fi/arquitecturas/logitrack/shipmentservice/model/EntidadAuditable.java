@@ -41,7 +41,7 @@ public abstract class EntidadAuditable {
      * Fecha y hora en la cual la entidad fue creada.
      */
     @CreatedDate
-    @Column(name = "fecha_creación", nullable = false, updatable = false)
+    @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
 
     /**

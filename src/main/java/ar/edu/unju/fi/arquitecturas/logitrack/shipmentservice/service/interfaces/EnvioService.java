@@ -65,8 +65,15 @@ public interface EnvioService {
      * @param volumen Volumen en centímetros cubo del paquete.
      * @return {@link Double} El valor total de la tarifa en función de la configuración de tarifa base vigente y los parámetros ingresados.
      */
-    @Transactional
     double calcularTarifa(Direccion direccionOrigen, Direccion direccionDestino, double peso, double volumen);
+
+    /**
+     * Permite obtener un envío con los datos de su repartidor asignado a partir del código de seguimiento
+     *
+     * @param codigoSeguimiento Código de seguimiento del envío.
+     * @return {@link EnvioResponseDto} con toda la información del envío y el repartidor asignado al mismo.
+     */
+    EnvioResponseDto obtenerEnvioConRepartidor(String codigoSeguimiento);
 
     /**
      * Localiza un envío a partir de su código de seguimiento público.
@@ -112,10 +119,10 @@ public interface EnvioService {
      * Asigna un repartidor activo a un envío registrado que se encuentre en estado PENDIENTE.
      *
      * @param idEnvio Identificador único del envío.
-     * @param idRepartidor Identificador único del repartidor activo.
+     * @param dniRepartidor Documento de Identificación Nacional del repartidor activo.
      * @return DTO de respuesta con la información del envío actualizado.
      * @throws RecursoNoEncontradoException Si el envío o el repartidor no existen.
      * @throws OperacionInvalidaException Si el envío no está PENDIENTE o el repartidor no está ACTIVO.
      */
-    EnvioResponseDto asignarRepartidor(UUID idEnvio, UUID idRepartidor);
+    EnvioResponseDto asignarRepartidor(UUID idEnvio, String dniRepartidor);
 }

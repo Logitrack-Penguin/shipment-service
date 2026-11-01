@@ -23,7 +23,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Entity
 @Builder
-@Table(name = "envíos")
+@Table(name = "envios")
 public class Envio extends EntidadAuditable{
 
     /**
@@ -41,7 +41,7 @@ public class Envio extends EntidadAuditable{
     /**
      * Código de seguimiento del envío, este mismo es único y no se puede actualizar.
      */
-    @Column(name = "código_seguimiento", nullable = false, updatable = false, unique = true)
+    @Column(name = "codigo_seguimiento", nullable = false, updatable = false, unique = true)
     private String codigoSeguimiento;
 
     /**
@@ -72,7 +72,7 @@ public class Envio extends EntidadAuditable{
      * Enumerado del estado del envío.
      * @see EstadoEnvio
      */
-    @Column(name = "estado_envío", nullable = false)
+    @Column(name = "estado_envio", nullable = false)
     @Enumerated(EnumType.STRING)
     private EstadoEnvio estadoEnvio;
 
@@ -86,7 +86,7 @@ public class Envio extends EntidadAuditable{
     /**
      * Código único de recepción necesario para actualizar el estado del envío a ENTREGADO.
      */
-    @Column(name = "código_recepción", nullable = false, updatable = false, unique = true)
+    @Column(name = "codigo_recepcion", nullable = false, updatable = false, unique = true)
     private String codigoRecepcion;
 
     /**
@@ -120,6 +120,12 @@ public class Envio extends EntidadAuditable{
     private Direccion direccionDestino;
 
     /**
+     * Representa el DNI del repartidor asignado al envío.
+     */
+    @Column(name = "dni_repartidor")
+    private String dniRepartidor;
+
+    /**
      * Relación N a 1 con la entidad Cliente.
      * <ul>
      *     <li>fetch = FetchType.LAZY: Estrategia de carga que indica que las entidades relacionadas no se cargarán
@@ -131,17 +137,4 @@ public class Envio extends EntidadAuditable{
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
-
-    /**
-     * Relación N a 1 con la entidad Repartidor.
-     * <ul>
-     *     <li>fetch = FetchType.LAZY: Estrategia de carga que indica que las entidades relacionadas no se cargarán
-     *     de la base de datos hasta que se acceda a ellas explícitamente</li>
-     *
-     *     <li>@JoinColumn: Define el ID del repartidor como clave foránea dentro de Envío</li>
-     * </ul>
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "repartidor_id")
-    private Repartidor repartidor;
 }

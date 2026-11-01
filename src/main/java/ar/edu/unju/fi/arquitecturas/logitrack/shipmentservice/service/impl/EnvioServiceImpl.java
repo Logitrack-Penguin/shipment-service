@@ -1,7 +1,9 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.impl;
 
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.client.CourierClient;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.ConfigTarifaBaseResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.CourierResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
@@ -13,7 +15,6 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEst
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.ClienteRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.RepartidorRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.ConfigTarifaBaseService;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.GeocodingService;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.EnvioService;
@@ -48,9 +49,9 @@ import java.util.UUID;
 public class EnvioServiceImpl implements EnvioService {
 
     private final EnvioRepository envioRepository;
+    private final CourierClient courierClient;
     private final HistoricoEstadoEnvioRepository historicoEstadoEnvioRepository;
     private final ClienteRepository clienteRepository;
-    private final RepartidorRepository repartidorRepository;
     private final GeocodingService geocodingService;
     private final ConfigTarifaBaseService configTarifaBaseService;
     private final static double radioTierraKm = 6371.0;
@@ -175,6 +176,17 @@ public class EnvioServiceImpl implements EnvioService {
                 configActualResponseDto.getCostoPorCmCubo() * volumen;
     }
 
+    @Override
+    @Transactional
+    public EnvioResponseDto obtenerEnvioConRepartidor(String codigoSeguimiento) {
+        Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
+
+        CourierResponseDto repartidorInfo = courierClient.obtenerRepartidor(envio.getDniRepartidor())
+                .orElse(null);
+
+        return EnvioMapper.toResponseDto(envio, repartidorInfo);
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -253,8 +265,8 @@ public class EnvioServiceImpl implements EnvioService {
      */
     @Override
     @Transactional
-    public EnvioResponseDto asignarRepartidor(UUID idEnvio, UUID idRepartidor) {
-        log.info("Iniciando asignación de repartidor ID: {} al envío ID: {}", idRepartidor, idEnvio);
+    public EnvioResponseDto asignarRepartidor(UUID idEnvio, String dniRepartidor) {
+        log.info("Iniciando asignación de repartidor ID: {} al envío DNI: {}", dniRepartidor, idEnvio);
 
         Envio envio = envioRepository.findById(idEnvio)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el Envío con ID: " + idEnvio));
@@ -265,19 +277,19 @@ public class EnvioServiceImpl implements EnvioService {
             );
         }
 
-        ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Repartidor repartidor = repartidorRepository.findById(idRepartidor)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el Repartidor con ID: " + idRepartidor));
+        CourierResponseDto repartidor = courierClient.obtenerRepartidor(dniRepartidor)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el Repartidor con DNI: " + dniRepartidor));
 
-        if (!ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoRepartidor.ACTIVO.equals(repartidor.getEstadoRepartidor())) {
+        if (!courierClient.estaDisponible(dniRepartidor)) {
             throw new OperacionInvalidaException(
-                    "No se puede asignar un repartidor que no esté en estado ACTIVO. Estado actual: " + repartidor.getEstadoRepartidor()
+                    "No se puede asignar un repartidor que no esté en estado ACTIVO."
             );
         }
 
-        envio.setRepartidor(repartidor);
+        envio.setDniRepartidor(repartidor.getDni());
         Envio envioActualizado = envioRepository.save(envio);
 
-        log.info("Repartidor con ID {} asignado exitosamente al envío {}", idRepartidor, idEnvio);
+        log.info("Repartidor con DNI {} asignado exitosamente al envío {}", dniRepartidor, idEnvio);
         return EnvioMapper.toResponseDto(envioActualizado);
     }
 
