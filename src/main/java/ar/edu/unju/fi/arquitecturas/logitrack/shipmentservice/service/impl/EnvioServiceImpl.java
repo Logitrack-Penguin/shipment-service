@@ -1,9 +1,9 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.impl;
 
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.client.CourierClient;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.ConfigTarifaBaseResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.CourierResponseDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioCourierResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
@@ -15,6 +15,7 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEst
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.ClienteRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.client.CourierFeignClient;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.ConfigTarifaBaseService;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.GeocodingService;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.EnvioService;
@@ -49,7 +50,7 @@ import java.util.UUID;
 public class EnvioServiceImpl implements EnvioService {
 
     private final EnvioRepository envioRepository;
-    private final CourierClient courierClient;
+    private final CourierFeignClient courierFeignClient;
     private final HistoricoEstadoEnvioRepository historicoEstadoEnvioRepository;
     private final ClienteRepository clienteRepository;
     private final GeocodingService geocodingService;
@@ -62,10 +63,10 @@ public class EnvioServiceImpl implements EnvioService {
     @Override
     @Transactional
     public EnvioResponseDto registrarEnvio(EnvioRequestDto request) {
-        log.info("Iniciando registro de nuevo envío para cliente ID: {}", request.getIdCliente());
+        log.info("Iniciando registro de nuevo envío para cliente DNI: {}", request.getDniCliente());
 
-        Cliente cliente = clienteRepository.findById(request.getIdCliente())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Cliente no encontrado con ID: " + request.getIdCliente()));
+        Cliente cliente = clienteRepository.findByDni(request.getDniCliente())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cliente no encontrado con DNI: " + request.getDniCliente()));
 
         String codigoSeguimiento = "TRK-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String codigoRecepcion = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
@@ -153,6 +154,7 @@ public class EnvioServiceImpl implements EnvioService {
     @Override
     @Transactional
     public double calcularTarifa(Direccion direccionOrigen, Direccion direccionDestino, double peso, double volumen) {
+        /*
         var coordenadasOrigen = geocodingService.obtenerCoordenadas(
                 direccionOrigen.getCalle(),
                 direccionOrigen.getNumero(),
@@ -169,22 +171,12 @@ public class EnvioServiceImpl implements EnvioService {
                 coordenadasDestino.latitud(),
                 coordenadasDestino.longitud()
         );
+        */
         ConfigTarifaBaseResponseDto configActualResponseDto = configTarifaBaseService.obtenerConfiguracionVigente();
         return configActualResponseDto.getTarifaBase() +
-                configActualResponseDto.getCostoPorKm() * distanciaTotalAproximada +
+               // configActualResponseDto.getCostoPorKm() * distanciaTotalAproximada +
                 configActualResponseDto.getCostoPorKg() * peso +
                 configActualResponseDto.getCostoPorCmCubo() * volumen;
-    }
-
-    @Override
-    @Transactional
-    public EnvioResponseDto obtenerEnvioConRepartidor(String codigoSeguimiento) {
-        Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
-
-        CourierResponseDto repartidorInfo = courierClient.obtenerRepartidor(envio.getDniRepartidor())
-                .orElse(null);
-
-        return EnvioMapper.toResponseDto(envio, repartidorInfo);
     }
 
     /**
@@ -265,7 +257,10 @@ public class EnvioServiceImpl implements EnvioService {
      */
     @Override
     @Transactional
-    public EnvioResponseDto asignarRepartidor(UUID idEnvio, String dniRepartidor) {
+    public EnvioCourierResponseDto asignarRepartidor(UUID idEnvio, String dniRepartidor) {
+
+        EnvioCourierResponseDto response = new EnvioCourierResponseDto();
+
         log.info("Iniciando asignación de repartidor ID: {} al envío DNI: {}", dniRepartidor, idEnvio);
 
         Envio envio = envioRepository.findById(idEnvio)
@@ -277,20 +272,36 @@ public class EnvioServiceImpl implements EnvioService {
             );
         }
 
-        CourierResponseDto repartidor = courierClient.obtenerRepartidor(dniRepartidor)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el Repartidor con DNI: " + dniRepartidor));
+        CourierResponseDto repartidor = courierFeignClient.obtenerRepartidorPorDni(dniRepartidor);
 
-        if (!courierClient.estaDisponible(dniRepartidor)) {
+        if (!courierFeignClient.estaDisponible(dniRepartidor)) {
             throw new OperacionInvalidaException(
                     "No se puede asignar un repartidor que no esté en estado ACTIVO."
             );
         }
+        response.setIdEnvio(envio.getIdEnvio());
+        response.setCodigoSeguimiento(envio.getCodigoSeguimiento());
+        response.setPeso(envio.getPeso());
+        response.setDimensiones(envio.getDimensiones());
+        response.setTarifa(envio.getTarifa());
+        response.setRemitente(String.format("%s, %s", envio.getCliente().getApellido(), envio.getCliente().getNombre()));
+        response.setEstadoEnvio(envio.getEstadoEnvio());
+        response.setFechaEstimadaEntrega(envio.getFechaEstimadaEntrega());
+        response.setFechaCreacionEnvio(envio.getFechaCreacion());
+        response.setCodigoRecepcion(envio.getCodigoRecepcion());
+        response.setDireccionOrigen(envio.getDireccionOrigen());
+        response.setDireccionDestino(envio.getDireccionDestino());
+        response.setIdRepartidor(repartidor.getIdRepartidor());
+        response.setDniRepartidor(repartidor.getDni());
+        response.setNombreCompletoRepartidor(repartidor.getNombreCompleto());
+        response.setTelefonoRepartidor(repartidor.getTelefono());
+        response.setTipoVehiculoRepartidor(repartidor.getTipoVehiculo());
 
         envio.setDniRepartidor(repartidor.getDni());
-        Envio envioActualizado = envioRepository.save(envio);
 
+        Envio envioActualizado = envioRepository.save(envio);
         log.info("Repartidor con DNI {} asignado exitosamente al envío {}", dniRepartidor, idEnvio);
-        return EnvioMapper.toResponseDto(envioActualizado);
+        return response;
     }
 
     /**

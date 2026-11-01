@@ -42,12 +42,12 @@ public class ClienteController {
     /**
      * Endpoint para consultar un cliente por su identificador único (UUID).
      *
-     * @param id Identificador único del cliente.
+     * @param dniCliente DNI del cliente.
      * @return {@link ResponseEntity} con los datos del cliente y código HTTP 200 (OK).
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<ClienteResponseDto> obtenerPorId(@PathVariable UUID id) {
-        return ResponseEntity.ok(clienteService.buscarPorId(id));
+    @GetMapping("/{dniCliente}")
+    public ResponseEntity<ClienteResponseDto> obtenerPorDni(@PathVariable String dniCliente) {
+        return ResponseEntity.ok(clienteService.buscarPorDni(dniCliente));
     }
 
     /**
@@ -63,24 +63,24 @@ public class ClienteController {
     /**
      * Endpoint para actualizar la información de un cliente existente.
      *
-     * @param id Identificador único del cliente a modificar.
+     * @param dniCliente DNI del cliente a modificar.
      * @param request Nuevos datos del cliente.
      * @return {@link ResponseEntity} con el cliente actualizado y código HTTP 200 (OK).
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<ClienteResponseDto> actualizarCliente(@PathVariable UUID id, @Valid @RequestBody ClienteRequestDto request) {
-        return ResponseEntity.ok(clienteService.actualizarCliente(id, request));
+    @PutMapping("/{dniCliente}")
+    public ResponseEntity<ClienteResponseDto> actualizarCliente(@PathVariable String dniCliente, @Valid @RequestBody ClienteRequestDto request) {
+        return ResponseEntity.ok(clienteService.actualizarCliente(dniCliente, request));
     }
 
     /**
      * Endpoint para eliminar un cliente del sistema por su identificador único.
      *
-     * @param id Identificador único del cliente a eliminar.
+     * @param dniCliente Documento de Identificación Nacional del cliente a eliminar.
      * @return {@link ResponseEntity} con código HTTP 204 (No Content) tras la eliminación exitosa.
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> eliminarCliente(@PathVariable UUID id) {
-        clienteService.eliminarCliente(id);
+    @DeleteMapping("/{dniCliente}")
+    public ResponseEntity<Void> eliminarCliente(@PathVariable String dniCliente) {
+        clienteService.eliminarCliente(dniCliente);
         return ResponseEntity.noContent().build();
     }
 }

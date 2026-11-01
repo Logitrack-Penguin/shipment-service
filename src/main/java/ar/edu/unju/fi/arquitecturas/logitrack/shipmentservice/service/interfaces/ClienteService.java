@@ -37,11 +37,11 @@ public interface ClienteService {
     /**
      * Busca y recupera la información de un cliente específico a partir de su identificador único.
      *
-     * @param id Identificador único universal {@link UUID} del cliente a buscar.
+     * @param dniCliente Documento de Identificación Nacional del cliente a buscar.
      * @return {@link ClienteResponseDto} con los datos del cliente encontrado.
      * @throws ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException si no se localiza ningún registro asociado al ID proporcionado.
      */
-    ClienteResponseDto buscarPorId(UUID id);
+    ClienteResponseDto buscarPorDni(String dniCliente);
 
     /**
      * Obtiene un listado completo de todos los clientes registrados en la plataforma LogiTrack.
@@ -54,18 +54,18 @@ public interface ClienteService {
     /**
      * Actualiza la información de un cliente existente identificado por su UUID.
      *
-     * @param id Identificador único universal {@link UUID} del cliente que se desea actualizar.
+     * @param dniCliente Documento de Identificación Nacional del cliente que se desea actualizar.
      * @param requestDto Objeto de transferencia con los nuevos datos a modificar.
      * @return {@link ClienteResponseDto} con la información del cliente actualizada.
      * @throws ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException si el cliente a actualizar no existe en el sistema.
      */
-    ClienteResponseDto actualizarCliente(UUID id, ClienteRequestDto requestDto);
+    ClienteResponseDto actualizarCliente(String dniCliente, ClienteRequestDto requestDto);
 
     /**
-     * Elimina de forma permanente un cliente del sistema utilizando su identificador único.
+     * Elimina de forma permanente un cliente del sistema utilizando su DNI.
      *
-     * @param id Identificador único universal {@link UUID} del cliente a eliminar.
+     * @param dniCliente DNI del cliente a eliminar.
      * @throws ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException si el cliente no es encontrado para su baja.
      */
-    void eliminarCliente(UUID id);
+    void eliminarCliente(String dniCliente);
 }

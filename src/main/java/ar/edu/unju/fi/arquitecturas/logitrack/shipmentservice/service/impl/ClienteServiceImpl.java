@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -97,19 +98,19 @@ public class ClienteServiceImpl implements ClienteService {
     /**
      * {@inheritDoc}
      *
-     * <p>Realiza una búsqueda por clave subrogada de tipo UUID. En caso de no encontrar
+     * <p>Realiza una búsqueda por DNI. En caso de no encontrar
      * coincidencia, dispara una {@link RecursoNoEncontradoException} que será capturada
      * globalmente por el {@link ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.GlobalExceptionHandler}.</p>
      */
     @Override
     @Transactional(readOnly = true)
-    public ClienteResponseDto buscarPorId(UUID id) {
-        log.debug("Consultando base de datos en modo solo lectura para obtener cliente con ID: [{}]", id);
+    public ClienteResponseDto buscarPorDni(String dniCliente) {
+        log.debug("Consultando base de datos en modo solo lectura para obtener cliente con DNI: [{}]", dniCliente);
 
-        Cliente cliente = clienteRepository.findById(id)
+        Cliente cliente = clienteRepository.findByDni(dniCliente)
                 .orElseThrow(() -> {
-                    log.error("Entidad no encontrada: No se pudo localizar ningún cliente asociado al ID [{}]", id);
-                    return new RecursoNoEncontradoException("Recurso no encontrado: Cliente no registrado con el ID: " + id);
+                    log.error("Entidad no encontrada: No se pudo localizar ningún cliente asociado al DNI [{}]", dniCliente);
+                    return new RecursoNoEncontradoException("Recurso no encontrado: Cliente no registrado con el DNI: " + dniCliente);
                 });
 
         return ClienteMapper.toResponseDto(cliente);
@@ -137,19 +138,19 @@ public class ClienteServiceImpl implements ClienteService {
     /**
      * {@inheritDoc}
      *
-     * <p><b>Reglas de Actualización:</b> Valida la existencia previa del registro mediante su ID.
+     * <p><b>Reglas de Actualización:</b> Valida la existencia previa del registro mediante su DNI.
      * Si el cliente existe, actualiza sus propiedades mutables (nombre, email, teléfono) y
      * consolida los cambios en la base de datos.</p>
      */
     @Override
     @Transactional
-    public ClienteResponseDto actualizarCliente(UUID id, ClienteRequestDto requestDto) {
-        log.info("Iniciando actualización de datos para el cliente con ID: [{}]", id);
+    public ClienteResponseDto actualizarCliente(String dniCliente, ClienteRequestDto requestDto) {
+        log.info("Iniciando actualización de datos para el cliente con DNI: [{}]", dniCliente);
 
-        Cliente clienteExistente = clienteRepository.findById(id)
+        Cliente clienteExistente = clienteRepository.findByDni(dniCliente)
                 .orElseThrow(() -> {
-                    log.error("Fallo operativo de actualización: Cliente inexistente con ID [{}]", id);
-                    return new RecursoNoEncontradoException("No se puede actualizar. Cliente no encontrado con el ID: " + id);
+                    log.error("Fallo operativo de actualización: Cliente inexistente con DNI [{}]", dniCliente);
+                    return new RecursoNoEncontradoException("No se puede actualizar. Cliente no encontrado con el ID: " + dniCliente);
                 });
 
         clienteExistente.setNombre(requestDto.getNombre());
@@ -157,7 +158,7 @@ public class ClienteServiceImpl implements ClienteService {
         clienteExistente.setTelefono(requestDto.getTelefono());
 
         Cliente clienteActualizado = clienteRepository.save(clienteExistente);
-        log.info("Cliente con ID [{}] actualizado y persistido correctamente.", id);
+        log.info("Cliente con DNI [{}] actualizado y persistido correctamente.", dniCliente);
 
         return ClienteMapper.toResponseDto(clienteActualizado);
     }
@@ -170,15 +171,15 @@ public class ClienteServiceImpl implements ClienteService {
      */
     @Override
     @Transactional
-    public void eliminarCliente(UUID id) {
-        log.warn("Solicitud de baja/eliminación física recibida para el cliente con ID: [{}]", id);
+    public void eliminarCliente(String dniCliente) {
+        log.warn("Solicitud de baja/eliminación física recibida para el cliente con DNI: [{}]", dniCliente);
 
-        if (!clienteRepository.existsById(id)) {
-            log.error("Fallo operativo de eliminación: El cliente con ID [{}] no existe en la base de datos.", id);
-            throw new RecursoNoEncontradoException("No se puede eliminar. Cliente no encontrado con el ID: " + id);
+        if (!clienteRepository.existsByDni(dniCliente)) {
+            log.error("Fallo operativo de eliminación: El cliente con DNI [{}] no existe en la base de datos.", dniCliente);
+            throw new RecursoNoEncontradoException("No se puede eliminar. Cliente no encontrado con el DNI: " + dniCliente);
         }
-
-        clienteRepository.deleteById(id);
-        log.info("Cliente con ID [{}] eliminado permanentemente del sistema.", id);
+        Optional<Cliente> clienteAEliminar = clienteRepository.findByDni(dniCliente);
+        clienteRepository.deleteById(clienteAEliminar.get().getIdCliente());
+        log.info("Cliente con ID [{}] eliminado permanentemente del sistema.", clienteAEliminar.get().getIdCliente());
     }
 }

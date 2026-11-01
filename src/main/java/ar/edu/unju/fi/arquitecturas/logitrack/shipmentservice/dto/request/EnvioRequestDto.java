@@ -3,6 +3,7 @@ package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Dimensiones;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Direccion;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.*;
 
 import java.util.UUID;
@@ -51,8 +52,9 @@ public class EnvioRequestDto {
     private Direccion direccionDestino;
 
     /**
-     * Identificador único del cliente que solicita el envío.
+     * Documento Nacional de Identificación del cliente que solicita el envío.
      */
-    @NotNull(message = "El ID del cliente es obligatorio.")
-    private UUID idCliente;
+    @NotNull(message = "El DNI del cliente es obligatorio.")
+    @Pattern(regexp = "\\d{8}", message = "El DNI solo puede contener números.")
+    private String dniCliente;
 }
