@@ -33,10 +33,12 @@ class ClienteServiceImplTest {
     private ClienteRequestDto requestDto;
     private Cliente clienteEntity;
     private UUID idCliente;
+    private String dniCliente;
 
     @BeforeEach
     void setUp() {
         idCliente = UUID.randomUUID();
+        dniCliente = "40123456";
 
         requestDto = ClienteRequestDto.builder()
                 .dni("40123456")
@@ -106,29 +108,30 @@ class ClienteServiceImplTest {
     }
 
     @Test
-    @DisplayName("Buscar cliente por ID exitosamente")
-    void buscarPorId_Exitoso() {
+    @DisplayName("Buscar cliente por DNI exitosamente")
+    void buscarPorDni_Exitoso() {
         // Given
-        when(clienteRepository.findById(idCliente)).thenReturn(Optional.of(clienteEntity));
+        when(clienteRepository.findByDni(dniCliente)).thenReturn(Optional.of(clienteEntity));
 
         // When
-        ClienteResponseDto response = clienteService.buscarPorId(idCliente);
+        ClienteResponseDto response = clienteService.buscarPorDni(dniCliente);
 
         // Then
         assertNotNull(response);
+        assertEquals(dniCliente, response.getDni());
         assertEquals(idCliente, response.getIdCliente());
-        verify(clienteRepository, times(1)).findById(idCliente);
+        verify(clienteRepository, times(1)).findByDni(dniCliente);
     }
 
     @Test
-    @DisplayName("Lanzar RecursoNoEncontradoException cuando el cliente no existe al buscar por ID")
-    void buscarPorId_NoEncontrado() {
+    @DisplayName("Lanzar RecursoNoEncontradoException cuando el cliente no existe al buscar por DNI")
+    void buscarPorDni_NoEncontrado() {
         // Given
-        when(clienteRepository.findById(idCliente)).thenReturn(Optional.empty());
+        when(clienteRepository.findByDni(dniCliente)).thenReturn(Optional.empty());
 
         // When & Then
         assertThrows(RecursoNoEncontradoException.class, () -> {
-            clienteService.buscarPorId(idCliente);
+            clienteService.buscarPorDni(dniCliente);
         });
     }
 }
