@@ -1,6 +1,9 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.impl;
 
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.EnvioRequestDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.ConfigTarifaBaseResponseDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.CourierResponseDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioCourierResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
@@ -13,11 +16,14 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEst
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.ClienteRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
-import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.RepartidorRepository;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.client.CourierFeignClient;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.ConfigTarifaBaseService;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.GeocodingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -37,15 +43,18 @@ import static org.mockito.Mockito.*;
  * Valida la lógica de negocio, reglas de transición de estado, cálculo de tarifas,
  * orquestación de repositorios y lanzamiento de excepciones de dominio,
  * aislando la capa de servicio mediante dobles de prueba (mocks).
+ * La consulta de repartidores a courier-service se simula mockeando
+ * {@link CourierFeignClient}, sin realizar llamadas HTTP reales.
  * </p>
  *
  * @author Logitrack-Penguin
- * @version 1.0.0
+ * @version 1.1.0
  * @since 19-10-2026
  * @see EnvioServiceImpl
  * @see EnvioRepository
  * @see HistoricoEstadoEnvioRepository
  * @see ClienteRepository
+ * @see CourierFeignClient
  */
 @ExtendWith(MockitoExtension.class)
 class EnvioServiceImplTest {
@@ -60,18 +69,23 @@ class EnvioServiceImplTest {
     private ClienteRepository clienteRepository;
 
     @Mock
-    private RepartidorRepository repartidorRepository;
+    private CourierFeignClient courierFeignClient;
+
+    @Mock
+    private GeocodingService geocodingService;
+
+    @Mock
+    private ConfigTarifaBaseService configTarifaBaseService;
 
     @InjectMocks
     private EnvioServiceImpl envioService;
 
     private Cliente clienteMock;
-    private Repartidor repartidorMock;
     private Envio envioMock;
     private EnvioRequestDto requestDto;
     private UUID idCliente;
     private UUID idEnvio;
-    private UUID idRepartidor;
+    private String dniRepartidor;
 
     /**
      * Configuración inicial del entorno de prueba antes de la ejecución de cada test.
@@ -81,7 +95,7 @@ class EnvioServiceImplTest {
     void setUp() {
         idCliente = UUID.randomUUID();
         idEnvio = UUID.randomUUID();
-        idRepartidor = UUID.randomUUID();
+        dniRepartidor = "35123456";
 
         clienteMock = Cliente.builder()
                 .idCliente(idCliente)
@@ -90,16 +104,6 @@ class EnvioServiceImplTest {
                 .apellido("Perez")
                 .email("juan.perez@example.com")
                 .telefono("3881234567")
-                .build();
-
-        repartidorMock = Repartidor.builder()
-                .idRepartidor(idRepartidor)
-                .dni("35123456")
-                .nombre("Carlos")
-                .apellido("Gomez")
-                .telefono("3884567890")
-                .tipoVehiculo("Motocicleta")
-                .estadoRepartidor(EstadoRepartidor.ACTIVO)
                 .build();
 
         Dimensiones dimensiones = new Dimensiones(10.0, 10.0, 10.0);
@@ -117,7 +121,7 @@ class EnvioServiceImplTest {
         direccionDestino.setCodigoPostal("4612");
 
         requestDto = EnvioRequestDto.builder()
-                .idCliente(idCliente)
+                .dniCliente(clienteMock.getDni())
                 .peso(5.0)
                 .dimensiones(dimensiones)
                 .direccionOrigen(direccionOrigen)
@@ -145,17 +149,31 @@ class EnvioServiceImplTest {
     @DisplayName("Debe registrar un envío exitosamente cuando el cliente existe")
     void registrarEnvio_Exitoso() {
         // Given
-        when(clienteRepository.findById(idCliente)).thenReturn(Optional.of(clienteMock));
+        when(clienteRepository.findByDni("40123456")).thenReturn(Optional.of(clienteMock));
+
+        // Configuración de tarifa vigente: 500 + 10 * 5kg + 0.05 * 1000cm3 = 600
+        ConfigTarifaBaseResponseDto config = new ConfigTarifaBaseResponseDto();
+        config.setTarifaBase(500.0);
+        config.setCostoPorKg(10.0);
+        config.setCostoPorCmCubo(0.05);
+        when(configTarifaBaseService.obtenerConfiguracionVigente()).thenReturn(config);
+
         when(envioRepository.save(any(Envio.class))).thenReturn(envioMock);
         when(historicoEstadoEnvioRepository.save(any(HistoricoEstadoEnvio.class))).thenReturn(new HistoricoEstadoEnvio());
 
         // When
         EnvioResponseDto response = envioService.registrarEnvio(requestDto);
 
+        // Then: el envío que se guarda lleva la tarifa calculada
+        ArgumentCaptor<Envio> envioCaptor = ArgumentCaptor.forClass(Envio.class);
+        verify(envioRepository).save(envioCaptor.capture());
+        assertEquals(600.0, envioCaptor.getValue().getTarifa(), 0.001);
+        verify(configTarifaBaseService, times(1)).obtenerConfiguracionVigente();
+
         // Then
         assertNotNull(response);
         assertEquals(EstadoEnvio.PENDIENTE, response.getEstadoEnvio());
-        verify(clienteRepository, times(1)).findById(idCliente);
+        verify(clienteRepository, times(1)).findByDni("40123456");
         verify(envioRepository, times(1)).save(any(Envio.class));
         verify(historicoEstadoEnvioRepository, times(1)).save(any(HistoricoEstadoEnvio.class));
     }
@@ -167,7 +185,7 @@ class EnvioServiceImplTest {
     @DisplayName("Debe lanzar RecursoNoEncontradoException al registrar envío con cliente inexistente")
     void registrarEnvio_LanzaExcepcion_ClienteNoEncontrado() {
         // Given
-        when(clienteRepository.findById(idCliente)).thenReturn(Optional.empty());
+        when(clienteRepository.findByDni("40123456")).thenReturn(Optional.empty());
 
         // When & Then
         assertThrows(RecursoNoEncontradoException.class, () -> envioService.registrarEnvio(requestDto));
@@ -358,25 +376,28 @@ class EnvioServiceImplTest {
     }
 
     // ==========================================
-    // NUEVAS PRUEBAS PARA ASIGNACIÓN DE REPARTIDOR
+    // ASIGNACIÓN DE REPARTIDOR (vía Feign -> courier-service)
     // ==========================================
 
     @Test
-    @DisplayName("Debe asignar un repartidor activo a un envío PENDIENTE exitosamente")
+    @DisplayName("Debe asignar un repartidor disponible a un envío PENDIENTE exitosamente")
     void asignarRepartidor_Exitoso() {
         // Given
         envioMock.setEstadoEnvio(EstadoEnvio.PENDIENTE);
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
-        when(repartidorRepository.findById(idRepartidor)).thenReturn(Optional.of(repartidorMock));
+        when(courierFeignClient.estaDisponible(dniRepartidor)).thenReturn(true);
+        // lenient: por si el servicio además consulta los datos del repartidor
+        lenient().when(courierFeignClient.obtenerRepartidorPorDni(dniRepartidor))
+                .thenReturn(new CourierResponseDto());
         when(envioRepository.save(any(Envio.class))).thenReturn(envioMock);
 
         // When
-        EnvioResponseDto response = envioService.asignarRepartidor(idEnvio, idRepartidor);
+        EnvioCourierResponseDto response = envioService.asignarRepartidor(idEnvio, dniRepartidor);
 
         // Then
         assertNotNull(response);
         verify(envioRepository, times(1)).findById(idEnvio);
-        verify(repartidorRepository, times(1)).findById(idRepartidor);
+        verify(courierFeignClient, times(1)).estaDisponible(dniRepartidor);
         verify(envioRepository, times(1)).save(envioMock);
     }
 
@@ -388,23 +409,25 @@ class EnvioServiceImplTest {
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
 
         // When & Then
-        assertThrows(OperacionInvalidaException.class, () -> envioService.asignarRepartidor(idEnvio, idRepartidor));
-        verify(repartidorRepository, never()).findById(any());
+        assertThrows(OperacionInvalidaException.class,
+                () -> envioService.asignarRepartidor(idEnvio, dniRepartidor));
+        verifyNoInteractions(courierFeignClient);   // ni siquiera llama a courier-service
         verify(envioRepository, never()).save(any());
     }
 
     @Test
-    @DisplayName("Debe lanzar OperacionInvalidaException si el repartidor no se encuentra ACTIVO")
-    void asignarRepartidor_LanzaExcepcion_RepartidorNoActivo() {
+    @DisplayName("Debe lanzar OperacionInvalidaException si el repartidor no está disponible")
+    void asignarRepartidor_LanzaExcepcion_RepartidorNoDisponible() {
         // Given
         envioMock.setEstadoEnvio(EstadoEnvio.PENDIENTE);
-        repartidorMock.setEstadoRepartidor(EstadoRepartidor.INACTIVO);
-
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
-        when(repartidorRepository.findById(idRepartidor)).thenReturn(Optional.of(repartidorMock));
+        when(courierFeignClient.estaDisponible(dniRepartidor)).thenReturn(false);
+        lenient().when(courierFeignClient.obtenerRepartidorPorDni(dniRepartidor))
+                .thenReturn(new CourierResponseDto());
 
         // When & Then
-        assertThrows(OperacionInvalidaException.class, () -> envioService.asignarRepartidor(idEnvio, idRepartidor));
+        assertThrows(OperacionInvalidaException.class,
+                () -> envioService.asignarRepartidor(idEnvio, dniRepartidor));
         verify(envioRepository, never()).save(any());
     }
 }
