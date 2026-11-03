@@ -1,5 +1,7 @@
 package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception;
 
+import feign.FeignException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,6 +63,17 @@ public class GlobalExceptionHandler {
         return construirRespuesta(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(CourierNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(CourierNoEncontradoException ex, HttpServletRequest req) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), req);
+    }
+
+    @ExceptionHandler({CourierServiceException.class, FeignException.class})
+    public ResponseEntity<ErrorResponse> handleCourierDown(Exception ex, HttpServletRequest req) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE,
+                "Servicio de repartidores no disponible", req);
+    }
+
     /**
      * Captura fallas de Bean Validation en payloads recibidos con @Valid en los controladores.
      */
@@ -90,4 +103,13 @@ public class GlobalExceptionHandler {
         body.put("mensaje", mensaje);
         return ResponseEntity.status(status).body(body);
     }
+
+    private ResponseEntity<ErrorResponse> build(HttpStatus status, String msg, HttpServletRequest req) {
+        return ResponseEntity.status(status).body(
+                new ErrorResponse(LocalDateTime.now(), status.value(),
+                        status.getReasonPhrase(), msg, req.getRequestURI()));
+    }
+
+    public record ErrorResponse(LocalDateTime timestamp, int status,
+                                String error, String message, String path) {}
 }

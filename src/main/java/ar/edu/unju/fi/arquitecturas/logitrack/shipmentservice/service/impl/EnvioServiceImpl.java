@@ -6,6 +6,7 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.Couri
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioCourierResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.CourierNoDisponibleException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.*;
@@ -80,7 +81,7 @@ public class EnvioServiceImpl implements EnvioService {
                 .peso(request.getPeso())
                 .dimensiones(request.getDimensiones())
                 .tarifa(tarifa)
-                .estadoEnvio(EstadoEnvio.PENDIENTE)
+                .estadoEnvio(EstadoEnvio.PENDIENTE_ASIGNACION)
                 .fechaEstimadaEntrega(LocalDate.now().plusDays(3))
                 .codigoRecepcion(codigoRecepcion)
                 .direccionOrigen(request.getDireccionOrigen())
@@ -91,8 +92,8 @@ public class EnvioServiceImpl implements EnvioService {
 
         HistoricoEstadoEnvio historico = HistoricoEstadoEnvio.builder()
                 .codigoSeguimiento(codigoSeguimiento)
-                .estadoEnvioAnterior(EstadoEnvio.PENDIENTE)
-                .estadoEnvioNuevo(EstadoEnvio.PENDIENTE)
+                .estadoEnvioAnterior(EstadoEnvio.PENDIENTE_ASIGNACION)
+                .estadoEnvioNuevo(EstadoEnvio.PENDIENTE_ASIGNACION)
                 .fechaCambioEstado(LocalDateTime.now())
                 .build();
         historicoEstadoEnvioRepository.save(historico);
@@ -123,7 +124,10 @@ public class EnvioServiceImpl implements EnvioService {
         Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
         EstadoEnvio estadoEnvioAnterior = envio.getEstadoEnvio();
 
-        if (envio.getEstadoEnvio().equals(EstadoEnvio.PENDIENTE)) {
+        if(envio.getEstadoEnvio().equals(EstadoEnvio.PENDIENTE_ASIGNACION)) {
+            throw new OperacionInvalidaException("Antes de cambiar el estado de envío debe asignarle un repartidor");
+        }
+        if (envio.getEstadoEnvio().equals(EstadoEnvio.REPARTIDOR_ASIGNADO)) {
             envio.setEstadoEnvio(EstadoEnvio.EN_RUTA);
         } else if (envio.getEstadoEnvio().equals(EstadoEnvio.EN_RUTA)) {
             if (codigoRecepcion == null) {
@@ -217,8 +221,8 @@ public class EnvioServiceImpl implements EnvioService {
         Envio envio = envioRepository.findById(idEnvio)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Envío no encontrado con ID: " + idEnvio));
 
-        if (!EstadoEnvio.PENDIENTE.equals(envio.getEstadoEnvio())) {
-            throw new OperacionInvalidaException("Solo se pueden cancelar envíos en estado PENDIENTE. Estado actual: " + envio.getEstadoEnvio());
+        if (!(EstadoEnvio.PENDIENTE_ASIGNACION.equals(envio.getEstadoEnvio()) || EstadoEnvio.REPARTIDOR_ASIGNADO.equals(envio.getEstadoEnvio()))) {
+            throw new OperacionInvalidaException("Solo se pueden cancelar envíos que todavía no estén en RUTA. Estado actual: " + envio.getEstadoEnvio());
         }
 
         EstadoEnvio estadoAnterior = envio.getEstadoEnvio();
@@ -261,24 +265,12 @@ public class EnvioServiceImpl implements EnvioService {
 
         EnvioCourierResponseDto response = new EnvioCourierResponseDto();
 
+
         log.info("Iniciando asignación de repartidor ID: {} al envío DNI: {}", dniRepartidor, idEnvio);
 
         Envio envio = envioRepository.findById(idEnvio)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el Envío con ID: " + idEnvio));
 
-        if (!EstadoEnvio.PENDIENTE.equals(envio.getEstadoEnvio())) {
-            throw new OperacionInvalidaException(
-                    "Solo se pueden asignar repartidores a envíos en estado PENDIENTE. Estado actual: " + envio.getEstadoEnvio()
-            );
-        }
-
-        CourierResponseDto repartidor = courierFeignClient.obtenerRepartidorPorDni(dniRepartidor);
-
-        if (!courierFeignClient.estaDisponible(dniRepartidor)) {
-            throw new OperacionInvalidaException(
-                    "No se puede asignar un repartidor que no esté en estado ACTIVO."
-            );
-        }
         response.setIdEnvio(envio.getIdEnvio());
         response.setCodigoSeguimiento(envio.getCodigoSeguimiento());
         response.setPeso(envio.getPeso());
@@ -291,6 +283,30 @@ public class EnvioServiceImpl implements EnvioService {
         response.setCodigoRecepcion(envio.getCodigoRecepcion());
         response.setDireccionOrigen(envio.getDireccionOrigen());
         response.setDireccionDestino(envio.getDireccionDestino());
+
+        if (!EstadoEnvio.PENDIENTE_ASIGNACION.equals(envio.getEstadoEnvio())) {
+            throw new OperacionInvalidaException(
+                    "Solo se pueden asignar repartidores a envíos en estado PENDIENTE_ASIGNACION. Estado actual: " + envio.getEstadoEnvio()
+            );
+        }
+
+        CourierResponseDto repartidor = courierFeignClient.obtenerRepartidorPorDni(dniRepartidor);
+
+        if (repartidor.isFallback()) {
+            envio.setEstadoEnvio(EstadoEnvio.PENDIENTE_ASIGNACION);
+            Envio envioResultado = envioRepository.save(envio);
+            response.setMensajeAsignacion("----- No se ha podido asignar el repartidor. -----");
+            return response;
+        }
+        if(!"ACTIVO".equals(repartidor.getEstado())) {
+            throw new CourierNoDisponibleException(dniRepartidor, repartidor.getEstado());
+        }
+
+        envio.setDniRepartidor(dniRepartidor);
+        envio.setEstadoEnvio(EstadoEnvio.REPARTIDOR_ASIGNADO);
+        envioRepository.save(envio);
+
+        response.setMensajeAsignacion("----- Asignación exitosa. -----");
         response.setIdRepartidor(repartidor.getIdRepartidor());
         response.setDniRepartidor(repartidor.getDni());
         response.setNombreCompletoRepartidor(repartidor.getNombreCompleto());

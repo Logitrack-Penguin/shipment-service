@@ -15,7 +15,8 @@ package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums;
  * @see Enum
  */
 public enum EstadoEnvio {
-    PENDIENTE,
+    PENDIENTE_ASIGNACION,
+    REPARTIDOR_ASIGNADO,
     EN_RUTA,
     ENTREGADO,
     CANCELADO

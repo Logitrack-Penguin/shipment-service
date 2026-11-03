@@ -48,7 +48,7 @@ VALUES
         UUID_TO_BIN('e1eebc99-9c0b-4ef8-bb6d-6bb9bd380e01'), NOW(), NOW(),
         'TRK-2026-000001', 'REC-001',
         15.0, 20.0, 30.0, 2.50, 4500.00,
-        'PENDIENTE', '2026-10-25',
+        'PENDIENTE_ASIGNACION', '2026-10-25',
         'Av. Belgrano', '1234', 'San Salvador de Jujuy', '4600', 'Salida desde depósito central',
         'Calle Salta', '456', 'San Salvador de Jujuy', '4600', 'Entrega en planta baja', null,
         UUID_TO_BIN('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11')
@@ -59,7 +59,7 @@ VALUES
         10.0, 10.0, 20.0, 1.20, 3200.00,
         'EN_RUTA', '2026-10-22',
         'San Martín', '789', 'San Salvador de Jujuy', '4600', 'Retiro en sucursal',
-        'Éxodo', '101', 'Palpalá', '4612', 'Casa con reja blanca', null,
+        'Éxodo', '101', 'Palpalá', '4612', 'Casa con reja blanca', '30222333',
         UUID_TO_BIN('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22')
     );
 
@@ -73,9 +73,9 @@ INSERT INTO historico_estado_envios (
 VALUES
     (
         UUID_TO_BIN('333bc999-9c0b-4ef8-bb6d-6bb9bd380333'), 'TRK-2026-000001',
-        'PENDIENTE', 'PENDIENTE', NOW()
+        'PENDIENTE_ASIGNACION', 'PENDIENTE_ASIGNACION', NOW()
     ),
     (
         UUID_TO_BIN('444bc999-9c0b-4ef8-bb6d-6bb9bd380444'), 'TRK-2026-000002',
-        'PENDIENTE', 'EN_RUTA', NOW()
+        'REPARTIDOR_ASIGNADO', 'EN_RUTA', NOW()
     );

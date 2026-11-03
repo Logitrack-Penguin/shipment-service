@@ -84,6 +84,8 @@ public class EnvioCourierResponseDto {
      */
     private LocalDateTime fechaCreacionEnvio;
 
+    private String mensajeAsignacion;
+
     /**
      * Identificador único universal del repartidor dentro del sistema.
      */

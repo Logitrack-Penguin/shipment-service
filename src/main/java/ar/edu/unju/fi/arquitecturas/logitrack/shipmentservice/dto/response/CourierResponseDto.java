@@ -48,4 +48,9 @@ public class CourierResponseDto {
      */
     private boolean estaDisponible;
 
+    private boolean fallback;
+
+    private String mensaje;
+
+    private String estado;
 }
