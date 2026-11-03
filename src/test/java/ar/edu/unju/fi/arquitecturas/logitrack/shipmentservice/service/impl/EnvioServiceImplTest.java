@@ -135,7 +135,7 @@ class EnvioServiceImplTest {
                 .peso(5.0)
                 .dimensiones(dimensiones)
                 .tarifa(550.0)
-                .estadoEnvio(EstadoEnvio.PENDIENTE)
+                .estadoEnvio(EstadoEnvio.PENDIENTE_ASIGNACION)
                 .codigoRecepcion("ABC123")
                 .direccionOrigen(direccionOrigen)
                 .direccionDestino(direccionDestino)
@@ -172,7 +172,7 @@ class EnvioServiceImplTest {
 
         // Then
         assertNotNull(response);
-        assertEquals(EstadoEnvio.PENDIENTE, response.getEstadoEnvio());
+        assertEquals(EstadoEnvio.PENDIENTE_ASIGNACION, response.getEstadoEnvio());
         verify(clienteRepository, times(1)).findByDni("40123456");
         verify(envioRepository, times(1)).save(any(Envio.class));
         verify(historicoEstadoEnvioRepository, times(1)).save(any(HistoricoEstadoEnvio.class));
@@ -226,13 +226,13 @@ class EnvioServiceImplTest {
     }
 
     /**
-     * Valida la transición de estado válida de PENDIENTE a EN_RUTA sin requerir código de recepción.
+     * Valida la transición de estado válida de REPARTIDOR_ASIGNADO a EN_RUTA sin requerir código de recepción.
      */
     @Test
-    @DisplayName("Debe cambiar el estado del envío de PENDIENTE a EN_RUTA exitosamente")
+    @DisplayName("Debe cambiar el estado del envío de REPARTIDOR_ASIGNADO a EN_RUTA exitosamente")
     void cambiarEstado_DePendienteAEnRuta_Exitoso() {
         // Given
-        envioMock.setEstadoEnvio(EstadoEnvio.PENDIENTE);
+        envioMock.setEstadoEnvio(EstadoEnvio.REPARTIDOR_ASIGNADO);
         when(envioRepository.findByCodigoSeguimiento("TRK-12345678")).thenReturn(Optional.of(envioMock));
         when(envioRepository.save(any(Envio.class))).thenReturn(envioMock);
         when(historicoEstadoEnvioRepository.save(any(HistoricoEstadoEnvio.class))).thenReturn(new HistoricoEstadoEnvio());
@@ -307,15 +307,15 @@ class EnvioServiceImplTest {
     @DisplayName("Debe listar envíos filtrados por estado")
     void listarPorEstado_ConEstadoEspecifico() {
         // Given
-        when(envioRepository.findByEstadoEnvio(EstadoEnvio.PENDIENTE)).thenReturn(List.of(envioMock));
+        when(envioRepository.findByEstadoEnvio(EstadoEnvio.REPARTIDOR_ASIGNADO)).thenReturn(List.of(envioMock));
 
         // When
-        List<EnvioResponseDto> resultado = envioService.listarPorEstado(EstadoEnvio.PENDIENTE);
+        List<EnvioResponseDto> resultado = envioService.listarPorEstado(EstadoEnvio.REPARTIDOR_ASIGNADO);
 
         // Then
         assertNotNull(resultado);
         assertEquals(1, resultado.size());
-        verify(envioRepository, times(1)).findByEstadoEnvio(EstadoEnvio.PENDIENTE);
+        verify(envioRepository, times(1)).findByEstadoEnvio(EstadoEnvio.REPARTIDOR_ASIGNADO);
     }
 
     /**
@@ -340,10 +340,10 @@ class EnvioServiceImplTest {
      * Valida la cancelación exitosa de un envío registrado que se encuentra en estado PENDIENTE.
      */
     @Test
-    @DisplayName("Debe cancelar un envío exitosamente si se encuentra en estado PENDIENTE")
+    @DisplayName("Debe cancelar un envío exitosamente si se encuentra en estado PENDIENTE_ASIGNACION o REPARTIDOR_ASIGNADO")
     void cancelarEnvio_ExitosoSiEstaPendiente() {
         // Given
-        envioMock.setEstadoEnvio(EstadoEnvio.PENDIENTE);
+        envioMock.setEstadoEnvio(EstadoEnvio.REPARTIDOR_ASIGNADO);
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
         when(envioRepository.save(any(Envio.class))).thenReturn(envioMock);
         when(historicoEstadoEnvioRepository.save(any(HistoricoEstadoEnvio.class))).thenReturn(new HistoricoEstadoEnvio());
@@ -380,10 +380,10 @@ class EnvioServiceImplTest {
     // ==========================================
 
     @Test
-    @DisplayName("Debe asignar un repartidor disponible a un envío PENDIENTE exitosamente")
+    @DisplayName("Debe asignar un repartidor disponible a un envío PENDIENTE_ASIGNACION exitosamente")
     void asignarRepartidor_Exitoso() {
         // Given
-        envioMock.setEstadoEnvio(EstadoEnvio.PENDIENTE);
+        envioMock.setEstadoEnvio(EstadoEnvio.PENDIENTE_ASIGNACION);
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
         when(courierFeignClient.estaDisponible(dniRepartidor)).thenReturn(true);
         // lenient: por si el servicio además consulta los datos del repartidor
@@ -398,6 +398,7 @@ class EnvioServiceImplTest {
         assertNotNull(response);
         verify(envioRepository, times(1)).findById(idEnvio);
         verify(courierFeignClient, times(1)).estaDisponible(dniRepartidor);
+        assertEquals(EstadoEnvio.REPARTIDOR_ASIGNADO, response.getEstadoEnvio());
         verify(envioRepository, times(1)).save(envioMock);
     }
 
@@ -415,11 +416,12 @@ class EnvioServiceImplTest {
         verify(envioRepository, never()).save(any());
     }
 
+
     @Test
     @DisplayName("Debe lanzar OperacionInvalidaException si el repartidor no está disponible")
     void asignarRepartidor_LanzaExcepcion_RepartidorNoDisponible() {
         // Given
-        envioMock.setEstadoEnvio(EstadoEnvio.PENDIENTE);
+        envioMock.setEstadoEnvio(EstadoEnvio.PENDIENTE_ASIGNACION);
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
         when(courierFeignClient.estaDisponible(dniRepartidor)).thenReturn(false);
         lenient().when(courierFeignClient.obtenerRepartidorPorDni(dniRepartidor))
