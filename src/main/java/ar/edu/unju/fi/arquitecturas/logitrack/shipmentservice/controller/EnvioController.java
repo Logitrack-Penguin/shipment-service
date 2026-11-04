@@ -68,7 +68,7 @@ public class EnvioController {
     }
 
     @PutMapping("/{idEnvio}/asignarRepartidor")
-    public ResponseEntity<EnvioCourierResponseDto> asignarRepartidor(@PathVariable UUID idEnvio, String dniRepartidor){
+    public ResponseEntity<EnvioCourierResponseDto> asignarRepartidor(@PathVariable UUID idEnvio, @RequestParam String dniRepartidor){
         return ResponseEntity.ok(envioService.asignarRepartidor(idEnvio, dniRepartidor));
     }
 }

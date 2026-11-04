@@ -151,7 +151,7 @@ class EnvioServiceImplTest {
         repartidor.setNombreCompleto("Gomez, Carlos");
         repartidor.setTelefono("3884567890");
         repartidor.setTipoVehiculo("Motocicleta");
-        repartidor.setEstado(estado);
+        repartidor.setEstadoRepartidor(estado);
         repartidor.setFallback(false);
         return repartidor;
     }
@@ -380,7 +380,7 @@ class EnvioServiceImplTest {
     void asignarRepartidor_Exitoso() {
         // Given
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
-        when(courierFeignClient.obtenerRepartidorPorDni(dniRepartidor)).thenReturn(repartidorConEstado("ACTIVO"));
+        when(courierFeignClient.obtenerPorDni(dniRepartidor)).thenReturn(repartidorConEstado("ACTIVO"));
         when(envioRepository.save(any(Envio.class))).thenReturn(envioMock);
 
         // When
@@ -390,9 +390,10 @@ class EnvioServiceImplTest {
         assertNotNull(response);
         assertEquals(dniRepartidor, response.getDniRepartidor());
         assertEquals("Gomez, Carlos", response.getNombreCompletoRepartidor());
+        assertEquals(EstadoEnvio.REPARTIDOR_ASIGNADO, response.getEstadoEnvio());
         assertEquals(EstadoEnvio.REPARTIDOR_ASIGNADO, envioMock.getEstadoEnvio());
         assertEquals(dniRepartidor, envioMock.getDniRepartidor());
-        verify(courierFeignClient, times(1)).obtenerRepartidorPorDni(dniRepartidor);
+        verify(courierFeignClient, times(1)).obtenerPorDni(dniRepartidor);
         verify(envioRepository, atLeastOnce()).save(envioMock);
     }
 
@@ -427,7 +428,7 @@ class EnvioServiceImplTest {
     void asignarRepartidor_LanzaExcepcion_RepartidorNoDisponible() {
         // Given
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
-        when(courierFeignClient.obtenerRepartidorPorDni(dniRepartidor)).thenReturn(repartidorConEstado("INACTIVO"));
+        when(courierFeignClient.obtenerPorDni(dniRepartidor)).thenReturn(repartidorConEstado("INACTIVO"));
 
         // When & Then
         assertThrows(CourierNoDisponibleException.class,
@@ -444,7 +445,7 @@ class EnvioServiceImplTest {
         respuestaFallback.setFallback(true);
 
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
-        when(courierFeignClient.obtenerRepartidorPorDni(dniRepartidor)).thenReturn(respuestaFallback);
+        when(courierFeignClient.obtenerPorDni(dniRepartidor)).thenReturn(respuestaFallback);
         lenient().when(envioRepository.save(any(Envio.class))).thenReturn(envioMock);
 
         // When

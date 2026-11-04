@@ -60,7 +60,9 @@ public class EnvioMapper {
                         envio.getCliente().getNombre(),
                         envio.getCliente().getDni()
                 ))
-                .repartidorAsignado("Sin repartidor Asignado")
+                .repartidorAsignado(envio.getDniRepartidor() != null
+                        ? "DNI: " + envio.getDniRepartidor()
+                        : "Sin repartidor asignado")
                 .estadoEnvio(envio.getEstadoEnvio())
                 .fechaEstimadaEntrega(envio.getFechaEstimadaEntrega())
                 .codigoRecepcion(envio.getCodigoRecepcion())

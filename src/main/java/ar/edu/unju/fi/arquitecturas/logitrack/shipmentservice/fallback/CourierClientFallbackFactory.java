@@ -19,11 +19,11 @@ public class CourierClientFallbackFactory implements FallbackFactory<CourierFeig
         return new CourierFeignClient() {
 
             @Override
-            public CourierResponseDto obtenerRepartidorPorDni(String dniRepartidor) {
+            public CourierResponseDto obtenerPorDni(String dniRepartidor) {
                 log.error("Fallback obtenerRepartidorPorDni({}): {}", dniRepartidor, cause.toString());
                 return CourierResponseDto.builder()
                         .dni(dniRepartidor)
-                        .estado("DESCONOCIDO")
+                        .estadoRepartidor("DESCONOCIDO")
                         .fallback(true)
                         .mensaje(mensaje(cause, dniRepartidor))
                         .build();

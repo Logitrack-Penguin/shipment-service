@@ -14,7 +14,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // privado: si es público, Jackson 3 lo usa para deserializar y falla con los boolean ausentes
 @Builder
 public class CourierResponseDto {
 
@@ -52,5 +52,5 @@ public class CourierResponseDto {
 
     private String mensaje;
 
-    private String estado;
+    private String estadoRepartidor;
 }

@@ -266,7 +266,7 @@ public class EnvioServiceImpl implements EnvioService {
         EnvioCourierResponseDto response = new EnvioCourierResponseDto();
 
 
-        log.info("Iniciando asignación de repartidor ID: {} al envío DNI: {}", dniRepartidor, idEnvio);
+        log.info("Iniciando asignación de repartidor DNI: {} al envío ID: {}", dniRepartidor, idEnvio);
 
         Envio envio = envioRepository.findById(idEnvio)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No se encontró el Envío con ID: " + idEnvio));
@@ -290,7 +290,7 @@ public class EnvioServiceImpl implements EnvioService {
             );
         }
 
-        CourierResponseDto repartidor = courierFeignClient.obtenerRepartidorPorDni(dniRepartidor);
+        CourierResponseDto repartidor = courierFeignClient.obtenerPorDni(dniRepartidor);
 
         if (repartidor.isFallback()) {
             envio.setEstadoEnvio(EstadoEnvio.PENDIENTE_ASIGNACION);
@@ -298,14 +298,15 @@ public class EnvioServiceImpl implements EnvioService {
             response.setMensajeAsignacion("----- No se ha podido asignar el repartidor. -----");
             return response;
         }
-        if(!"ACTIVO".equals(repartidor.getEstado())) {
-            throw new CourierNoDisponibleException(dniRepartidor, repartidor.getEstado());
+        if(!"ACTIVO".equals(repartidor.getEstadoRepartidor())) {
+            throw new CourierNoDisponibleException(dniRepartidor, repartidor.getEstadoRepartidor());
         }
 
         envio.setDniRepartidor(dniRepartidor);
         envio.setEstadoEnvio(EstadoEnvio.REPARTIDOR_ASIGNADO);
         envioRepository.save(envio);
 
+        response.setEstadoEnvio(envio.getEstadoEnvio());
         response.setMensajeAsignacion("----- Asignación exitosa. -----");
         response.setIdRepartidor(repartidor.getIdRepartidor());
         response.setDniRepartidor(repartidor.getDni());
@@ -313,9 +314,6 @@ public class EnvioServiceImpl implements EnvioService {
         response.setTelefonoRepartidor(repartidor.getTelefono());
         response.setTipoVehiculoRepartidor(repartidor.getTipoVehiculo());
 
-        envio.setDniRepartidor(repartidor.getDni());
-
-        Envio envioActualizado = envioRepository.save(envio);
         log.info("Repartidor con DNI {} asignado exitosamente al envío {}", dniRepartidor, idEnvio);
         return response;
     }
