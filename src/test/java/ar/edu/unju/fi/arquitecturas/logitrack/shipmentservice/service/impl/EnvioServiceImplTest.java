@@ -300,6 +300,32 @@ class EnvioServiceImplTest {
     }
 
     @Test
+    @DisplayName("Debe lanzar OperacionInvalidaException y no registrar historial si el envío ya está ENTREGADO")
+    void cambiarEstado_LanzaExcepcion_SiYaEstaEntregado() {
+        // Given
+        envioMock.setEstadoEnvio(EstadoEnvio.ENTREGADO);
+        when(envioRepository.findByCodigoSeguimiento(CODIGO_SEGUIMIENTO)).thenReturn(Optional.of(envioMock));
+
+        // When & Then
+        assertThrows(OperacionInvalidaException.class, () -> envioService.cambiarEstado(CODIGO_SEGUIMIENTO, CODIGO_RECEPCION));
+        verify(envioRepository, never()).save(any(Envio.class));
+        verify(historicoEstadoEnvioRepository, never()).save(any(HistoricoEstadoEnvio.class));
+    }
+
+    @Test
+    @DisplayName("Debe lanzar OperacionInvalidaException y no registrar historial si el envío está CANCELADO")
+    void cambiarEstado_LanzaExcepcion_SiEstaCancelado() {
+        // Given
+        envioMock.setEstadoEnvio(EstadoEnvio.CANCELADO);
+        when(envioRepository.findByCodigoSeguimiento(CODIGO_SEGUIMIENTO)).thenReturn(Optional.of(envioMock));
+
+        // When & Then
+        assertThrows(OperacionInvalidaException.class, () -> envioService.cambiarEstado(CODIGO_SEGUIMIENTO, null));
+        verify(envioRepository, never()).save(any(Envio.class));
+        verify(historicoEstadoEnvioRepository, never()).save(any(HistoricoEstadoEnvio.class));
+    }
+
+    @Test
     @DisplayName("Debe listar envíos filtrados por estado")
     void listarPorEstado_ConEstadoEspecifico() {
         // Given
