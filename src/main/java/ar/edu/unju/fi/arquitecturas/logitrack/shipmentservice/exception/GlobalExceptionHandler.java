@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,6 +62,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> manejarRecursoNoEncontrado(RecursoNoEncontradoException ex) {
         log.warn("Excepción de dominio capturada [404 NOT FOUND]: {}", ex.getMessage());
         return construirRespuesta(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    /**
+     * Asignar un repartidor que no está ACTIVO es un conflicto con el estado actual del recurso, no un error del servidor.
+     */
+    @ExceptionHandler(CourierNoDisponibleException.class)
+    public ResponseEntity<Map<String, Object>> manejarCourierNoDisponible(CourierNoDisponibleException ex) {
+        log.warn("Repartidor no disponible [409 CONFLICT]: {}", ex.getMessage());
+        return construirRespuesta(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    /**
+     * Un parámetro de ruta o de consulta con tipo inválido (UUID mal formado, estado inexistente) es un error del cliente.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> manejarTipoInvalido(MethodArgumentTypeMismatchException ex) {
+        log.warn("Parámetro con tipo inválido [400 BAD REQUEST]: {}", ex.getName());
+        return construirRespuesta(HttpStatus.BAD_REQUEST, "Valor inválido para el parámetro '" + ex.getName() + "'.");
     }
 
     @ExceptionHandler(CourierNoEncontradoException.class)

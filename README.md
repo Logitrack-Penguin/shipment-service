@@ -161,6 +161,30 @@ Durante este segundo sprint, se han completado e integrado las siguientes funcio
 
 ---
 
+## 🚀 Funcionalidades del Sprint 4 (LT4-15)
+
+Endpoints nuevos (aditivos: los existentes no cambian). A través del gateway, la ruta base es `/applications/apishipment/api/v1/envios`.
+
+| Método y ruta | Roles (gateway) | Body | Respuestas |
+| --- | --- | --- | --- |
+| `PATCH /api/v1/envios/{idEnvio}/estado` | ADMIN, REPARTIDOR | `{"codigoRecepcion": "..."}`, opcional; obligatorio para pasar de EN_RUTA a ENTREGADO | 200 con el envío actualizado · 400 si falta el código, si es incorrecto, si el envío no tiene repartidor o si ya está ENTREGADO/CANCELADO · 404 si el envío no existe |
+| `GET /api/v1/envios/{idEnvio}/historial` | ADMIN, CLIENTE, REPARTIDOR | — | 200 con `[{estadoEnvioAnterior, estadoEnvioNuevo, fechaCambioEstado}]` en orden cronológico · 404 si el envío no existe |
+
+Cambios en los errores:
+
+* `PUT /{idEnvio}/asignarRepartidor` con un repartidor que no está ACTIVO responde **409 Conflict** (antes 500).
+* Un parámetro con tipo inválido (UUID mal formado, `?estado=` inexistente) responde **400** (antes 500).
+
+Ejemplo (entregar un envío en ruta):
+
+```bash
+curl -X PATCH http://localhost:8066/applications/apishipment/api/v1/envios/<idEnvio>/estado \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"codigoRecepcion":"REC-002"}'
+```
+
+---
+
 ## 🛠️ Tecnologías Utilizadas
 
 * **Lenguaje:** Java 25

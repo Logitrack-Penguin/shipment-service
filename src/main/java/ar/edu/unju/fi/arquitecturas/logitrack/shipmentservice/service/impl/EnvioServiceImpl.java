@@ -124,6 +124,9 @@ public class EnvioServiceImpl implements EnvioService {
         Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
         EstadoEnvio estadoEnvioAnterior = envio.getEstadoEnvio();
 
+        if (estadoEnvioAnterior == EstadoEnvio.ENTREGADO || estadoEnvioAnterior == EstadoEnvio.CANCELADO) {
+            throw new OperacionInvalidaException("El envío ya está finalizado (" + estadoEnvioAnterior + ").");
+        }
         if(envio.getEstadoEnvio().equals(EstadoEnvio.PENDIENTE_ASIGNACION)) {
             throw new OperacionInvalidaException("Antes de cambiar el estado de envío debe asignarle un repartidor");
         }
