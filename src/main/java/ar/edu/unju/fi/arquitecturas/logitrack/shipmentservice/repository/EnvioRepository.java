@@ -34,4 +34,21 @@ public interface EnvioRepository extends JpaRepository<Envio, UUID> {
     Optional<Envio> findByCodigoSeguimiento(String codigoSeguimiento);
 
     List<Envio> findByEstadoEnvio(EstadoEnvio estadoEnvio);
+
+    /**
+     * Envíos de un repartidor en un estado dado. Lo usa la liberación de envíos cuando un
+     * repartidor se da de baja (LT4-34).
+     * @param dniRepartidor DNI del repartidor asignado.
+     * @param estadoEnvio Estado de los envíos a buscar.
+     * @return Envíos que cumplen ambas condiciones.
+     */
+    List<Envio> findByDniRepartidorAndEstadoEnvio(String dniRepartidor, EstadoEnvio estadoEnvio);
+
+    /**
+     * Cuenta los envíos de un repartidor en un estado dado (LT4-34).
+     * @param dniRepartidor DNI del repartidor asignado.
+     * @param estadoEnvio Estado de los envíos a contar.
+     * @return Cantidad de envíos.
+     */
+    long countByDniRepartidorAndEstadoEnvio(String dniRepartidor, EstadoEnvio estadoEnvio);
 }
