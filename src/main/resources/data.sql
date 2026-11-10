@@ -1,16 +1,19 @@
-SET FOREIGN_KEY_CHECKS = 0;
-
-TRUNCATE TABLE historico_estado_envios;
-TRUNCATE TABLE envios;
-TRUNCATE TABLE clientes;
-TRUNCATE TABLE configuracion_tarifa_base;
-
-SET FOREIGN_KEY_CHECKS = 1;
+-- ==========================================================
+-- DATOS INICIALES (idempotente)
+-- ==========================================================
+-- Este script corre en cada arranque (spring.sql.init.mode: always) y NO borra
+-- nada: los datos creados desde la API sobreviven a los reinicios.
+-- Cada fila sembrada tiene un id fijo; con INSERT IGNORE, si la fila ya existe,
+-- MySQL la saltea sin error. Así:
+--   * una base nueva recibe la tarifa base, los clientes y los envíos de prueba;
+--   * una base existente queda como estaba.
+-- No se usa sql.init.mode: never porque una base nueva quedaría sin la tarifa
+-- base y el cálculo de envíos fallaría.
 
 -- ==========================================================
 -- 1. CONFIGURACIÓN DE TARIFA BASE
 -- ==========================================================
-INSERT INTO configuracion_tarifa_base (
+INSERT IGNORE INTO configuracion_tarifa_base (
     id_config_tarifa_base, fecha_creacion, fecha_ultima_modificacion,
     tarifa_base, costo_por_kg, costo_por_km, costo_por_cm_cubo
 )
@@ -23,7 +26,7 @@ VALUES
 -- ==========================================================
 -- 2. CLIENTES
 -- ==========================================================
-INSERT INTO clientes (id, fecha_creacion, fecha_ultima_modificacion, apellido, dni, email, nombre, telefono)
+INSERT IGNORE INTO clientes (id, fecha_creacion, fecha_ultima_modificacion, apellido, dni, email, nombre, telefono)
 VALUES
     (UUID_TO_BIN('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'), NOW(), NOW(), 'Pérez', '35123456', 'juan.perez@email.com', 'Juan', '3881234567'),
     (UUID_TO_BIN('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22'), NOW(), NOW(), 'Gómez', '38987654', 'maria.gomez@email.com', 'María', '3887654321'),
@@ -34,7 +37,7 @@ VALUES
 -- ==========================================================
 -- 3. ENVÍOS
 -- ==========================================================
-INSERT INTO envios (
+INSERT IGNORE INTO envios (
     id, fecha_creacion, fecha_ultima_modificacion,
     codigo_seguimiento, codigo_recepcion,
     alto, ancho, largo, peso, tarifa,
@@ -66,7 +69,7 @@ VALUES
 -- ==========================================================
 -- 4. HISTÓRICO DE ESTADOS DE ENVÍOS
 -- ==========================================================
-INSERT INTO historico_estado_envios (
+INSERT IGNORE INTO historico_estado_envios (
     id_historico_estado_envio, codigo_seguimiento,
     estado_envio_anterior, estado_envio_nuevo, fecha_cambio_estado
 )
