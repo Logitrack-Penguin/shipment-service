@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -133,5 +134,24 @@ class ClienteServiceImplTest {
         assertThrows(RecursoNoEncontradoException.class, () -> {
             clienteService.buscarPorDni(dniCliente);
         });
+    }
+
+    @Test
+    @DisplayName("buscarPorEmail devuelve el cliente con ese email, sin distinguir mayúsculas ni espacios")
+    void buscarPorEmail_Existente_DevuelveCliente() {
+        when(clienteRepository.findByEmailIgnoreCase("Juan.Perez@example.com")).thenReturn(Optional.of(clienteEntity));
+
+        List<ClienteResponseDto> clientes = clienteService.buscarPorEmail("  Juan.Perez@example.com ");
+
+        assertEquals(1, clientes.size());
+        assertEquals(dniCliente, clientes.get(0).getDni());
+    }
+
+    @Test
+    @DisplayName("buscarPorEmail sin coincidencias devuelve una lista vacía")
+    void buscarPorEmail_Inexistente_DevuelveVacio() {
+        when(clienteRepository.findByEmailIgnoreCase("nadie@example.com")).thenReturn(Optional.empty());
+
+        assertTrue(clienteService.buscarPorEmail("nadie@example.com").isEmpty());
     }
 }

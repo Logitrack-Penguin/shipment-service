@@ -8,6 +8,7 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.Operacio
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Direccion;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.Envio;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.security.UsuarioActual;
 
 import java.util.List;
 import java.util.UUID;
@@ -83,6 +84,36 @@ public interface EnvioService {
      * @return Lista de DTOs de envíos que cumplen el criterio.
      */
     List<EnvioResponseDto> listarPorEstado(EstadoEnvio estado);
+
+    /**
+     * Lista los envíos que puede ver un usuario restringido, filtrados opcionalmente por estado: los
+     * asignados a él si es REPARTIDOR y los suyos si es CLIENTE.
+     *
+     * @param usuario Usuario restringido (cabeceras del gateway). Sin DNI, la lista es vacía.
+     * @param estado  Estado por el cual filtrar (opcional).
+     * @return Lista de DTOs de los envíos visibles para ese usuario.
+     */
+    List<EnvioResponseDto> listarVisibles(UsuarioActual usuario, EstadoEnvio estado);
+
+    /**
+     * Verifica que el usuario pueda acceder al envío: un REPARTIDOR solo accede a los asignados a él
+     * y un CLIENTE, a los suyos. Un envío ajeno se responde igual que uno inexistente, para no revelar
+     * que existe.
+     *
+     * @param idEnvio Identificador único del envío.
+     * @param usuario Usuario que hace el pedido (cabeceras del gateway).
+     * @throws RecursoNoEncontradoException Si el envío no existe o el usuario no puede verlo.
+     */
+    void verificarAcceso(UUID idEnvio, UsuarioActual usuario);
+
+    /**
+     * Igual que {@link #verificarAcceso(UUID, UsuarioActual)}, pero buscando por código de seguimiento.
+     *
+     * @param codigoSeguimiento Código de seguimiento del envío.
+     * @param usuario           Usuario que hace el pedido (cabeceras del gateway).
+     * @throws RecursoNoEncontradoException Si el envío no existe o el usuario no puede verlo.
+     */
+    void verificarAccesoPorCodigo(String codigoSeguimiento, UsuarioActual usuario);
 
     /**
      * Cancela un envío registrado garantizando que solo se lleve a cabo si se encuentra en estado PENDIENTE.

@@ -52,6 +52,15 @@ public interface ClienteService {
     List<ClienteResponseDto> listarClientes();
 
     /**
+     * Busca el cliente con ese email. Lo usa security-service para completar el DNI de las cuentas
+     * CLIENTE creadas antes de que el DNI viajara en el token.
+     *
+     * @param email Correo electrónico del cliente (sin distinguir mayúsculas).
+     * @return Lista con el cliente, o vacía si no hay ninguno con ese email.
+     */
+    List<ClienteResponseDto> buscarPorEmail(String email);
+
+    /**
      * Actualiza la información de un cliente existente identificado por su UUID.
      *
      * @param dniCliente Documento de Identificación Nacional del cliente que se desea actualizar.

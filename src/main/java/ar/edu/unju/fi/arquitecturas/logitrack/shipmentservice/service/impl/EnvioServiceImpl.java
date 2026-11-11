@@ -16,6 +16,7 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEst
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.ClienteRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.security.UsuarioActual;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.client.CourierFeignClient;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.ConfigTarifaBaseService;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.GeocodingService;
@@ -27,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -211,6 +214,62 @@ public class EnvioServiceImpl implements EnvioService {
         return envios.stream()
                 .map(EnvioMapper::toResponseDto)
                 .toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<EnvioResponseDto> listarVisibles(UsuarioActual usuario, EstadoEnvio estado) {
+        log.debug("Listando envíos visibles para el DNI {} por estado: {}", usuario.dni(), estado);
+        if (usuario.dni() == null) {
+            return List.of();
+        }
+        // Un usuario con los dos roles ve la unión, sin repetir.
+        Map<UUID, Envio> envios = new LinkedHashMap<>();
+        if (usuario.esRepartidorRestringido()) {
+            envioRepository.findByDniRepartidor(usuario.dni()).forEach(e -> envios.put(e.getIdEnvio(), e));
+        }
+        if (usuario.esClienteRestringido()) {
+            envioRepository.findByClienteDni(usuario.dni()).forEach(e -> envios.put(e.getIdEnvio(), e));
+        }
+
+        return envios.values().stream()
+                .filter(e -> estado == null || estado == e.getEstadoEnvio())
+                .map(EnvioMapper::toResponseDto)
+                .toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public void verificarAcceso(UUID idEnvio, UsuarioActual usuario) {
+        if (!usuario.esRestringido()) {
+            return;
+        }
+        // Un envío ajeno da el mismo 404 que uno inexistente.
+        envioRepository.findById(idEnvio)
+                .filter(usuario::puedeVer)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Envío no encontrado con ID: " + idEnvio));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public void verificarAccesoPorCodigo(String codigoSeguimiento, UsuarioActual usuario) {
+        if (!usuario.esRestringido()) {
+            return;
+        }
+        Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
+        if (!usuario.puedeVer(envio)) {
+            // Mismo mensaje que un código inexistente.
+            throw new RecursoNoEncontradoException("Envío no encontrado");
+        }
     }
 
     /**
