@@ -16,6 +16,7 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.model.HistoricoEst
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.ClienteRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.EnvioRepository;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.repository.HistoricoEstadoEnvioRepository;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.security.UsuarioActual;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.client.CourierFeignClient;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.ConfigTarifaBaseService;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.GeocodingService;
@@ -211,6 +212,56 @@ public class EnvioServiceImpl implements EnvioService {
         return envios.stream()
                 .map(EnvioMapper::toResponseDto)
                 .toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<EnvioResponseDto> listarDeRepartidor(String dniRepartidor, EstadoEnvio estado) {
+        log.debug("Listando envíos del repartidor {} por estado: {}", dniRepartidor, estado);
+        if (dniRepartidor == null) {
+            return List.of();
+        }
+        List<Envio> envios = (estado != null)
+                ? envioRepository.findByDniRepartidorAndEstadoEnvio(dniRepartidor, estado)
+                : envioRepository.findByDniRepartidor(dniRepartidor);
+
+        return envios.stream()
+                .map(EnvioMapper::toResponseDto)
+                .toList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public void verificarAcceso(UUID idEnvio, UsuarioActual usuario) {
+        if (!usuario.esRepartidorRestringido()) {
+            return;
+        }
+        // Un envío ajeno da el mismo 404 que uno inexistente.
+        envioRepository.findById(idEnvio)
+                .filter(e -> usuario.puedeVer(e.getDniRepartidor()))
+                .orElseThrow(() -> new RecursoNoEncontradoException("Envío no encontrado con ID: " + idEnvio));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public void verificarAccesoPorCodigo(String codigoSeguimiento, UsuarioActual usuario) {
+        if (!usuario.esRepartidorRestringido()) {
+            return;
+        }
+        Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
+        if (!usuario.puedeVer(envio.getDniRepartidor())) {
+            // Mismo mensaje que un código inexistente.
+            throw new RecursoNoEncontradoException("Envío no encontrado");
+        }
     }
 
     /**

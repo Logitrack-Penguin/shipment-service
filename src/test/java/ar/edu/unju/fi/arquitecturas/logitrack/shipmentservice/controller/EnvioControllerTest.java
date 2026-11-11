@@ -7,6 +7,7 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.CourierN
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionInvalidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.EnvioService;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.security.UsuarioActual;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.HistoricoEnvioService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,9 +20,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -165,5 +171,119 @@ class EnvioControllerTest {
         mockMvc.perform(put(BASE + "/{id}/asignarRepartidor", id).param("dniRepartidor", "28111222"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.mensaje").value(ex.getMessage()));
+    }
+
+    // ---------- Envíos visibles para un REPARTIDOR (cabeceras del api-gateway) ----------
+
+    private static final String DNI_REPARTIDOR = "28111222";
+
+    @Test
+    @DisplayName("GET /envios de un REPARTIDOR devuelve solo los asignados a él")
+    void listar_repartidor_devuelveSoloLosSuyos() throws Exception {
+        when(envioService.listarDeRepartidor(DNI_REPARTIDOR, null))
+                .thenReturn(List.of(EnvioResponseDto.builder().codigoSeguimiento(CODIGO_SEGUIMIENTO).build()));
+
+        mockMvc.perform(get(BASE)
+                        .header(UsuarioActual.HEADER_ROLES, "REPARTIDOR")
+                        .header(UsuarioActual.HEADER_DNI, DNI_REPARTIDOR))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].codigoSeguimiento").value(CODIGO_SEGUIMIENTO));
+
+        verify(envioService, never()).listarPorEstado(any());
+    }
+
+    @Test
+    @DisplayName("GET /envios?estado= de un REPARTIDOR filtra también por estado")
+    void listar_repartidorConEstado_filtraPorEstado() throws Exception {
+        when(envioService.listarDeRepartidor(DNI_REPARTIDOR, EstadoEnvio.EN_RUTA)).thenReturn(List.of());
+
+        mockMvc.perform(get(BASE).param("estado", "EN_RUTA")
+                        .header(UsuarioActual.HEADER_ROLES, "REPARTIDOR")
+                        .header(UsuarioActual.HEADER_DNI, DNI_REPARTIDOR))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("GET /envios de un ADMIN sigue devolviendo todos")
+    void listar_admin_devuelveTodos() throws Exception {
+        when(envioService.listarPorEstado(isNull())).thenReturn(List.of());
+
+        mockMvc.perform(get(BASE).header(UsuarioActual.HEADER_ROLES, "ADMIN"))
+                .andExpect(status().isOk());
+
+        verify(envioService).listarPorEstado(isNull());
+        verify(envioService, never()).listarDeRepartidor(any(), any());
+    }
+
+    @Test
+    @DisplayName("GET /envios/{id} de un envío de otro repartidor devuelve 404")
+    void obtenerPorId_envioAjeno_devuelve404() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new RecursoNoEncontradoException("Envío no encontrado con ID: " + id))
+                .when(envioService).verificarAcceso(eq(id), any(UsuarioActual.class));
+
+        mockMvc.perform(get(BASE + "/{id}", id)
+                        .header(UsuarioActual.HEADER_ROLES, "REPARTIDOR")
+                        .header(UsuarioActual.HEADER_DNI, DNI_REPARTIDOR))
+                .andExpect(status().isNotFound());
+
+        verify(envioService, never()).obtenerPorId(id);
+    }
+
+    @Test
+    @DisplayName("GET /envios/tracking/{codigo} de un envío de otro repartidor devuelve 404")
+    void tracking_envioAjeno_devuelve404() throws Exception {
+        doThrow(new RecursoNoEncontradoException("Envío no encontrado"))
+                .when(envioService).verificarAccesoPorCodigo(eq(CODIGO_SEGUIMIENTO), any(UsuarioActual.class));
+
+        mockMvc.perform(get(BASE + "/tracking/{codigo}", CODIGO_SEGUIMIENTO)
+                        .header(UsuarioActual.HEADER_ROLES, "REPARTIDOR")
+                        .header(UsuarioActual.HEADER_DNI, DNI_REPARTIDOR))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /historial de un envío de otro repartidor devuelve 404")
+    void historial_envioAjeno_devuelve404() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new RecursoNoEncontradoException("Envío no encontrado con ID: " + id))
+                .when(envioService).verificarAcceso(eq(id), any(UsuarioActual.class));
+
+        mockMvc.perform(get(BASE + "/{id}/historial", id)
+                        .header(UsuarioActual.HEADER_ROLES, "REPARTIDOR")
+                        .header(UsuarioActual.HEADER_DNI, DNI_REPARTIDOR))
+                .andExpect(status().isNotFound());
+
+        verify(historicoEnvioService, never()).obtenerHistorial(id);
+    }
+
+    @Test
+    @DisplayName("PATCH /estado de un envío de otro repartidor devuelve 404 y no cambia nada")
+    void cambiarEstado_envioAjeno_devuelve404() throws Exception {
+        UUID id = UUID.randomUUID();
+        doThrow(new RecursoNoEncontradoException("Envío no encontrado con ID: " + id))
+                .when(envioService).verificarAcceso(eq(id), any(UsuarioActual.class));
+
+        mockMvc.perform(patch(BASE + "/{id}/estado", id)
+                        .header(UsuarioActual.HEADER_ROLES, "REPARTIDOR")
+                        .header(UsuarioActual.HEADER_DNI, DNI_REPARTIDOR))
+                .andExpect(status().isNotFound());
+
+        verify(envioService, never()).cambiarEstado(any(), any());
+    }
+
+    @Test
+    @DisplayName("Las cabeceras del gateway llegan al servicio como UsuarioActual")
+    void obtenerPorId_pasaLasCabecerasAlServicio() throws Exception {
+        UUID id = envioExistente();
+
+        mockMvc.perform(get(BASE + "/{id}", id)
+                        .header(UsuarioActual.HEADER_ROLES, "REPARTIDOR")
+                        .header(UsuarioActual.HEADER_DNI, DNI_REPARTIDOR))
+                .andExpect(status().isOk());
+
+        verify(envioService).verificarAcceso(id, new UsuarioActual(Set.of("REPARTIDOR"), DNI_REPARTIDOR));
     }
 }
