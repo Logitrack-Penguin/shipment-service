@@ -86,17 +86,19 @@ public interface EnvioService {
     List<EnvioResponseDto> listarPorEstado(EstadoEnvio estado);
 
     /**
-     * Lista los envíos asignados a un repartidor, filtrados opcionalmente por estado.
+     * Lista los envíos que puede ver un usuario restringido, filtrados opcionalmente por estado: los
+     * asignados a él si es REPARTIDOR y los suyos si es CLIENTE.
      *
-     * @param dniRepartidor DNI del repartidor. Si es null, devuelve una lista vacía.
-     * @param estado        Estado por el cual filtrar (opcional).
-     * @return Lista de DTOs de los envíos asignados a ese repartidor.
+     * @param usuario Usuario restringido (cabeceras del gateway). Sin DNI, la lista es vacía.
+     * @param estado  Estado por el cual filtrar (opcional).
+     * @return Lista de DTOs de los envíos visibles para ese usuario.
      */
-    List<EnvioResponseDto> listarDeRepartidor(String dniRepartidor, EstadoEnvio estado);
+    List<EnvioResponseDto> listarVisibles(UsuarioActual usuario, EstadoEnvio estado);
 
     /**
-     * Verifica que el usuario pueda acceder al envío: un REPARTIDOR solo accede a los asignados a él.
-     * Un envío ajeno se responde igual que uno inexistente, para no revelar que existe.
+     * Verifica que el usuario pueda acceder al envío: un REPARTIDOR solo accede a los asignados a él
+     * y un CLIENTE, a los suyos. Un envío ajeno se responde igual que uno inexistente, para no revelar
+     * que existe.
      *
      * @param idEnvio Identificador único del envío.
      * @param usuario Usuario que hace el pedido (cabeceras del gateway).

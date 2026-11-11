@@ -26,6 +26,14 @@ public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
     Optional<Cliente> findByDni(String dni);
 
     /**
+     * Busca un cliente por su correo electrónico, sin distinguir mayúsculas.
+     *
+     * @param email Correo electrónico del cliente.
+     * @return Un {@link Optional} que contiene el cliente si existe.
+     */
+    Optional<Cliente> findByEmailIgnoreCase(String email);
+
+    /**
      * Verifica si ya existe un cliente registrado con el DNI proporcionado.
      *
      * @param dni DNI a verificar.

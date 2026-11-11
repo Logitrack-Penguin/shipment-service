@@ -28,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -219,16 +221,22 @@ public class EnvioServiceImpl implements EnvioService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<EnvioResponseDto> listarDeRepartidor(String dniRepartidor, EstadoEnvio estado) {
-        log.debug("Listando envíos del repartidor {} por estado: {}", dniRepartidor, estado);
-        if (dniRepartidor == null) {
+    public List<EnvioResponseDto> listarVisibles(UsuarioActual usuario, EstadoEnvio estado) {
+        log.debug("Listando envíos visibles para el DNI {} por estado: {}", usuario.dni(), estado);
+        if (usuario.dni() == null) {
             return List.of();
         }
-        List<Envio> envios = (estado != null)
-                ? envioRepository.findByDniRepartidorAndEstadoEnvio(dniRepartidor, estado)
-                : envioRepository.findByDniRepartidor(dniRepartidor);
+        // Un usuario con los dos roles ve la unión, sin repetir.
+        Map<UUID, Envio> envios = new LinkedHashMap<>();
+        if (usuario.esRepartidorRestringido()) {
+            envioRepository.findByDniRepartidor(usuario.dni()).forEach(e -> envios.put(e.getIdEnvio(), e));
+        }
+        if (usuario.esClienteRestringido()) {
+            envioRepository.findByClienteDni(usuario.dni()).forEach(e -> envios.put(e.getIdEnvio(), e));
+        }
 
-        return envios.stream()
+        return envios.values().stream()
+                .filter(e -> estado == null || estado == e.getEstadoEnvio())
                 .map(EnvioMapper::toResponseDto)
                 .toList();
     }
@@ -239,12 +247,12 @@ public class EnvioServiceImpl implements EnvioService {
     @Override
     @Transactional(readOnly = true)
     public void verificarAcceso(UUID idEnvio, UsuarioActual usuario) {
-        if (!usuario.esRepartidorRestringido()) {
+        if (!usuario.esRestringido()) {
             return;
         }
         // Un envío ajeno da el mismo 404 que uno inexistente.
         envioRepository.findById(idEnvio)
-                .filter(e -> usuario.puedeVer(e.getDniRepartidor()))
+                .filter(usuario::puedeVer)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Envío no encontrado con ID: " + idEnvio));
     }
 
@@ -254,11 +262,11 @@ public class EnvioServiceImpl implements EnvioService {
     @Override
     @Transactional(readOnly = true)
     public void verificarAccesoPorCodigo(String codigoSeguimiento, UsuarioActual usuario) {
-        if (!usuario.esRepartidorRestringido()) {
+        if (!usuario.esRestringido()) {
             return;
         }
         Envio envio = obtenerEnvioEntityPorCodigoSeguimiento(codigoSeguimiento);
-        if (!usuario.puedeVer(envio.getDniRepartidor())) {
+        if (!usuario.puedeVer(envio)) {
             // Mismo mensaje que un código inexistente.
             throw new RecursoNoEncontradoException("Envío no encontrado");
         }

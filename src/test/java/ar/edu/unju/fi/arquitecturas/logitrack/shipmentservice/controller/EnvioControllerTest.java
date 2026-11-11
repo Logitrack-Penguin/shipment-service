@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -180,7 +181,7 @@ class EnvioControllerTest {
     @Test
     @DisplayName("GET /envios de un REPARTIDOR devuelve solo los asignados a él")
     void listar_repartidor_devuelveSoloLosSuyos() throws Exception {
-        when(envioService.listarDeRepartidor(DNI_REPARTIDOR, null))
+        when(envioService.listarVisibles(new UsuarioActual(Set.of("REPARTIDOR"), DNI_REPARTIDOR), null))
                 .thenReturn(List.of(EnvioResponseDto.builder().codigoSeguimiento(CODIGO_SEGUIMIENTO).build()));
 
         mockMvc.perform(get(BASE)
@@ -196,7 +197,8 @@ class EnvioControllerTest {
     @Test
     @DisplayName("GET /envios?estado= de un REPARTIDOR filtra también por estado")
     void listar_repartidorConEstado_filtraPorEstado() throws Exception {
-        when(envioService.listarDeRepartidor(DNI_REPARTIDOR, EstadoEnvio.EN_RUTA)).thenReturn(List.of());
+        when(envioService.listarVisibles(new UsuarioActual(Set.of("REPARTIDOR"), DNI_REPARTIDOR), EstadoEnvio.EN_RUTA))
+                .thenReturn(List.of());
 
         mockMvc.perform(get(BASE).param("estado", "EN_RUTA")
                         .header(UsuarioActual.HEADER_ROLES, "REPARTIDOR")
@@ -214,7 +216,7 @@ class EnvioControllerTest {
                 .andExpect(status().isOk());
 
         verify(envioService).listarPorEstado(isNull());
-        verify(envioService, never()).listarDeRepartidor(any(), any());
+        verify(envioService, never()).listarVisibles(any(), any());
     }
 
     @Test
@@ -285,5 +287,73 @@ class EnvioControllerTest {
                 .andExpect(status().isOk());
 
         verify(envioService).verificarAcceso(id, new UsuarioActual(Set.of("REPARTIDOR"), DNI_REPARTIDOR));
+    }
+
+    // ---------- Envíos de un CLIENTE ----------
+
+    private static final String DNI_CLIENTE = "30111222";
+
+    private static String envioJson(String dniCliente) {
+        return """
+                {"peso": 2.5,
+                 "dimensiones": {"ancho": 20, "alto": 10, "largo": 30},
+                 "direccionOrigen": {"calle": "Belgrano", "numero": "450", "ciudad": "Jujuy", "codigoPostal": "4600"},
+                 "direccionDestino": {"calle": "Güemes", "numero": "1200", "ciudad": "Palpalá", "codigoPostal": "4612"},
+                 "dniCliente": "%s"}
+                """.formatted(dniCliente);
+    }
+
+    @Test
+    @DisplayName("GET /envios de un CLIENTE devuelve solo los suyos")
+    void listar_cliente_devuelveSoloLosSuyos() throws Exception {
+        when(envioService.listarVisibles(new UsuarioActual(Set.of("CLIENTE"), DNI_CLIENTE), null))
+                .thenReturn(List.of(EnvioResponseDto.builder().codigoSeguimiento(CODIGO_SEGUIMIENTO).build()));
+
+        mockMvc.perform(get(BASE)
+                        .header(UsuarioActual.HEADER_ROLES, "CLIENTE")
+                        .header(UsuarioActual.HEADER_DNI, DNI_CLIENTE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+
+        verify(envioService, never()).listarPorEstado(any());
+    }
+
+    @Test
+    @DisplayName("POST /envios de un CLIENTE a su nombre se registra")
+    void registrar_clientePropio_devuelve201() throws Exception {
+        when(envioService.registrarEnvio(any()))
+                .thenReturn(EnvioResponseDto.builder().codigoSeguimiento(CODIGO_SEGUIMIENTO).build());
+
+        mockMvc.perform(post(BASE)
+                        .header(UsuarioActual.HEADER_ROLES, "CLIENTE")
+                        .header(UsuarioActual.HEADER_DNI, DNI_CLIENTE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(envioJson(DNI_CLIENTE)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("POST /envios de un CLIENTE a nombre de otro devuelve 403 y no registra nada")
+    void registrar_clienteAjeno_devuelve403() throws Exception {
+        mockMvc.perform(post(BASE)
+                        .header(UsuarioActual.HEADER_ROLES, "CLIENTE")
+                        .header(UsuarioActual.HEADER_DNI, DNI_CLIENTE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(envioJson("38987654")))
+                .andExpect(status().isForbidden());
+
+        verify(envioService, never()).registrarEnvio(any());
+    }
+
+    @Test
+    @DisplayName("POST /envios de un ADMIN puede usar cualquier cliente")
+    void registrar_admin_cualquierCliente() throws Exception {
+        when(envioService.registrarEnvio(any())).thenReturn(EnvioResponseDto.builder().build());
+
+        mockMvc.perform(post(BASE)
+                        .header(UsuarioActual.HEADER_ROLES, "ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(envioJson("38987654")))
+                .andExpect(status().isCreated());
     }
 }

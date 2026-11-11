@@ -6,6 +6,7 @@ import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.Envio
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.EnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.HistoricoEstadoEnvioResponseDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.enums.EstadoEnvio;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.OperacionNoPermitidaException;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.security.UsuarioActual;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.EnvioService;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.HistoricoEnvioService;
@@ -28,18 +29,24 @@ public class EnvioController {
 
     /**
      * Registrar un nuevo envío en la plataforma.
+     * Un CLIENTE solo puede registrar envíos a su nombre (403 con el DNI de otro cliente).
      */
     @PostMapping
-    public ResponseEntity<EnvioResponseDto> registrarEnvio(@Valid @RequestBody EnvioRequestDto request) {
+    public ResponseEntity<EnvioResponseDto> registrarEnvio(@Valid @RequestBody EnvioRequestDto request,
+            @RequestHeader(value = UsuarioActual.HEADER_ROLES, required = false) String roles,
+            @RequestHeader(value = UsuarioActual.HEADER_DNI, required = false) String dniUsuario) {
+        if (!UsuarioActual.desde(roles, dniUsuario).puedeUsarCliente(request.getDniCliente())) {
+            throw new OperacionNoPermitidaException("Un cliente solo puede registrar envíos a su nombre");
+        }
         EnvioResponseDto nuevoEnvio = envioService.registrarEnvio(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevoEnvio);
     }
 
     /**
      * Consultar envío por su identificador único (UUID).
-     * Un REPARTIDOR solo puede consultar los envíos asignados a él (404 con uno ajeno). Las cabeceras
-     * {@code X-User-Roles} y {@code X-User-Dni} las agrega el api-gateway; en este controller, todos
-     * los endpoints que las leen siguen la misma regla.
+     * Un REPARTIDOR solo puede consultar los envíos asignados a él y un CLIENTE, los suyos (404 con uno
+     * ajeno). Las cabeceras {@code X-User-Roles} y {@code X-User-Dni} las agrega el api-gateway; en este
+     * controller, todos los endpoints que las leen siguen la misma regla.
      */
     @GetMapping("/{idEnvio}")
     public ResponseEntity<EnvioResponseDto> obtenerPorId(@PathVariable UUID idEnvio,
@@ -51,7 +58,7 @@ public class EnvioController {
 
     /**
      * Consultar envío por su código de seguimiento (Tracking Code).
-     * Un REPARTIDOR solo puede consultar los envíos asignados a él (404 con uno ajeno).
+     * Un REPARTIDOR o un CLIENTE solo pueden consultar sus envíos (404 con uno ajeno).
      */
     @GetMapping("/tracking/{codigoSeguimiento}")
     public ResponseEntity<EnvioResponseDto> obtenerEnvioPorCodigoSeguimiento(@PathVariable String codigoSeguimiento,
@@ -64,15 +71,16 @@ public class EnvioController {
     /**
      * Consultar envíos de manera grupal filtrando por estado actual.
      * Ejemplo de llamada: GET /api/v1/envios?estado=PENDIENTE
-     * Un REPARTIDOR solo recibe los envíos asignados a él (lista vacía si su usuario no tiene DNI).
+     * Un REPARTIDOR solo recibe los envíos asignados a él y un CLIENTE, los suyos (lista vacía si su
+     * usuario no tiene DNI).
      */
     @GetMapping
     public ResponseEntity<List<EnvioResponseDto>> listarPorEstado(@RequestParam(required = false) EstadoEnvio estado,
             @RequestHeader(value = UsuarioActual.HEADER_ROLES, required = false) String roles,
             @RequestHeader(value = UsuarioActual.HEADER_DNI, required = false) String dniUsuario) {
         UsuarioActual usuario = UsuarioActual.desde(roles, dniUsuario);
-        if (usuario.esRepartidorRestringido()) {
-            return ResponseEntity.ok(envioService.listarDeRepartidor(usuario.dni(), estado));
+        if (usuario.esRestringido()) {
+            return ResponseEntity.ok(envioService.listarVisibles(usuario, estado));
         }
         if (estado != null) {
             return ResponseEntity.ok(envioService.listarPorEstado(estado));
@@ -100,7 +108,7 @@ public class EnvioController {
 
     /**
      * Consultar el historial de cambios de estado de un envío, en orden cronológico.
-     * Un REPARTIDOR solo puede consultar el de los envíos asignados a él (404 con uno ajeno).
+     * Un REPARTIDOR o un CLIENTE solo pueden consultar el de sus envíos (404 con uno ajeno).
      */
     @GetMapping("/{idEnvio}/historial")
     public ResponseEntity<List<HistoricoEstadoEnvioResponseDto>> historial(@PathVariable UUID idEnvio,

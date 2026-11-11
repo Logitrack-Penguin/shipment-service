@@ -488,44 +488,57 @@ class EnvioServiceImplTest {
         assertNull(envioMock.getDniRepartidor());
     }
 
-    // ---------- Envíos visibles para un REPARTIDOR ----------
+    // ---------- Envíos visibles para un REPARTIDOR o un CLIENTE ----------
 
     private static final UsuarioActual REPARTIDOR = UsuarioActual.desde("REPARTIDOR", "35123456");
+    private static final UsuarioActual CLIENTE = UsuarioActual.desde("CLIENTE", DNI_CLIENTE);
     private static final UsuarioActual ADMIN = UsuarioActual.desde("ADMIN", null);
 
     @Test
-    @DisplayName("listarDeRepartidor sin estado busca todos los envíos asignados a ese DNI")
-    void listarDeRepartidor_SinEstado_FiltraPorDni() {
+    @DisplayName("listarVisibles de un repartidor busca los envíos asignados a su DNI")
+    void listarVisibles_Repartidor_FiltraPorDniRepartidor() {
         envioMock.setDniRepartidor(dniRepartidor);
         when(envioRepository.findByDniRepartidor(dniRepartidor)).thenReturn(List.of(envioMock));
 
-        List<EnvioResponseDto> envios = envioService.listarDeRepartidor(dniRepartidor, null);
+        List<EnvioResponseDto> envios = envioService.listarVisibles(REPARTIDOR, null);
 
         assertEquals(1, envios.size());
         assertEquals(CODIGO_SEGUIMIENTO, envios.get(0).getCodigoSeguimiento());
         verify(envioRepository, never()).findAll();
+        verify(envioRepository, never()).findByClienteDni(any());
     }
 
     @Test
-    @DisplayName("listarDeRepartidor con estado filtra por DNI y estado")
-    void listarDeRepartidor_ConEstado_FiltraPorDniYEstado() {
-        when(envioRepository.findByDniRepartidorAndEstadoEnvio(dniRepartidor, EstadoEnvio.EN_RUTA))
-                .thenReturn(List.of());
+    @DisplayName("listarVisibles de un cliente busca los envíos de su DNI")
+    void listarVisibles_Cliente_FiltraPorDniCliente() {
+        when(envioRepository.findByClienteDni(DNI_CLIENTE)).thenReturn(List.of(envioMock));
 
-        assertTrue(envioService.listarDeRepartidor(dniRepartidor, EstadoEnvio.EN_RUTA).isEmpty());
-        verify(envioRepository).findByDniRepartidorAndEstadoEnvio(dniRepartidor, EstadoEnvio.EN_RUTA);
+        List<EnvioResponseDto> envios = envioService.listarVisibles(CLIENTE, null);
+
+        assertEquals(1, envios.size());
+        verify(envioRepository, never()).findAll();
+        verify(envioRepository, never()).findByDniRepartidor(any());
     }
 
     @Test
-    @DisplayName("listarDeRepartidor sin DNI devuelve una lista vacía sin consultar la base")
-    void listarDeRepartidor_SinDni_DevuelveVacio() {
-        assertTrue(envioService.listarDeRepartidor(null, null).isEmpty());
+    @DisplayName("listarVisibles con estado deja solo los envíos en ese estado")
+    void listarVisibles_ConEstado_FiltraPorEstado() {
+        when(envioRepository.findByClienteDni(DNI_CLIENTE)).thenReturn(List.of(envioMock));
+
+        assertTrue(envioService.listarVisibles(CLIENTE, EstadoEnvio.EN_RUTA).isEmpty());
+        assertEquals(1, envioService.listarVisibles(CLIENTE, EstadoEnvio.PENDIENTE_ASIGNACION).size());
+    }
+
+    @Test
+    @DisplayName("listarVisibles sin DNI devuelve una lista vacía sin consultar la base")
+    void listarVisibles_SinDni_DevuelveVacio() {
+        assertTrue(envioService.listarVisibles(UsuarioActual.desde("CLIENTE", null), null).isEmpty());
         verifyNoInteractions(envioRepository);
     }
 
     @Test
     @DisplayName("Un repartidor accede a un envío asignado a él")
-    void verificarAcceso_EnvioPropio_NoLanza() {
+    void verificarAcceso_RepartidorEnvioPropio_NoLanza() {
         envioMock.setDniRepartidor(dniRepartidor);
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
 
@@ -534,7 +547,7 @@ class EnvioServiceImplTest {
 
     @Test
     @DisplayName("Un envío asignado a otro repartidor da 404, igual que uno inexistente")
-    void verificarAcceso_EnvioAjeno_Lanza404() {
+    void verificarAcceso_RepartidorEnvioAjeno_Lanza404() {
         envioMock.setDniRepartidor("28111222");
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
 
@@ -544,11 +557,28 @@ class EnvioServiceImplTest {
 
     @Test
     @DisplayName("Un envío pendiente de asignación tampoco es visible para un repartidor")
-    void verificarAcceso_EnvioPendiente_Lanza404() {
+    void verificarAcceso_RepartidorEnvioPendiente_Lanza404() {
         when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
 
         assertThrows(RecursoNoEncontradoException.class,
                 () -> envioService.verificarAcceso(idEnvio, REPARTIDOR));
+    }
+
+    @Test
+    @DisplayName("Un cliente accede a sus envíos")
+    void verificarAcceso_ClienteEnvioPropio_NoLanza() {
+        when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
+
+        assertDoesNotThrow(() -> envioService.verificarAcceso(idEnvio, CLIENTE));
+    }
+
+    @Test
+    @DisplayName("El envío de otro cliente da 404, igual que uno inexistente")
+    void verificarAcceso_ClienteEnvioAjeno_Lanza404() {
+        when(envioRepository.findById(idEnvio)).thenReturn(Optional.of(envioMock));
+
+        assertThrows(RecursoNoEncontradoException.class,
+                () -> envioService.verificarAcceso(idEnvio, UsuarioActual.desde("CLIENTE", "38987654")));
     }
 
     @Test
@@ -568,5 +598,13 @@ class EnvioServiceImplTest {
         RecursoNoEncontradoException ex = assertThrows(RecursoNoEncontradoException.class,
                 () -> envioService.verificarAccesoPorCodigo(CODIGO_SEGUIMIENTO, REPARTIDOR));
         assertEquals("Envío no encontrado", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("Un cliente busca por código uno de sus envíos")
+    void verificarAccesoPorCodigo_ClienteEnvioPropio_NoLanza() {
+        when(envioRepository.findByCodigoSeguimiento(CODIGO_SEGUIMIENTO)).thenReturn(Optional.of(envioMock));
+
+        assertDoesNotThrow(() -> envioService.verificarAccesoPorCodigo(CODIGO_SEGUIMIENTO, CLIENTE));
     }
 }

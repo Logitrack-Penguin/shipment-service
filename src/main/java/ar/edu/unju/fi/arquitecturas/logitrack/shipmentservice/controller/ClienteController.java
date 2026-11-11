@@ -2,6 +2,8 @@ package ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.controller;
 
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.request.ClienteRequestDto;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.dto.response.ClienteResponseDto;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.exception.RecursoNoEncontradoException;
+import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.security.UsuarioActual;
 import ar.edu.unju.fi.arquitecturas.logitrack.shipmentservice.service.interfaces.ClienteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,17 +48,31 @@ public class ClienteController {
      * @return {@link ResponseEntity} con los datos del cliente y código HTTP 200 (OK).
      */
     @GetMapping("/{dniCliente}")
-    public ResponseEntity<ClienteResponseDto> obtenerPorDni(@PathVariable String dniCliente) {
+    public ResponseEntity<ClienteResponseDto> obtenerPorDni(@PathVariable String dniCliente,
+            @RequestHeader(value = UsuarioActual.HEADER_ROLES, required = false) String roles,
+            @RequestHeader(value = UsuarioActual.HEADER_DNI, required = false) String dniUsuario) {
+        // Un CLIENTE solo ve su propia ficha: la de otro da el mismo 404 que un DNI inexistente.
+        if (!UsuarioActual.desde(roles, dniUsuario).puedeUsarCliente(dniCliente)) {
+            throw new RecursoNoEncontradoException(
+                    "Recurso no encontrado: Cliente no registrado con el DNI: " + dniCliente);
+        }
         return ResponseEntity.ok(clienteService.buscarPorDni(dniCliente));
     }
 
     /**
-     * Endpoint para listar la totalidad de los clientes registrados en la plataforma.
+     * Endpoint para listar la totalidad de los clientes registrados en la plataforma, o buscar uno por
+     * email. El api-gateway solo lo permite a ADMIN; security-service lo llama directamente (sin pasar
+     * por el gateway) para completar el DNI de las cuentas CLIENTE anteriores a LT4-40.
      *
-     * @return {@link ResponseEntity} con la lista de clientes y código HTTP 200 (OK).
+     * @param email Email del cliente a buscar (opcional).
+     * @return {@link ResponseEntity} con la lista de clientes (o el cliente con ese email) y código
+     *         HTTP 200 (OK).
      */
     @GetMapping
-    public ResponseEntity<List<ClienteResponseDto>> listarClientes() {
+    public ResponseEntity<List<ClienteResponseDto>> listarClientes(@RequestParam(required = false) String email) {
+        if (email != null && !email.isBlank()) {
+            return ResponseEntity.ok(clienteService.buscarPorEmail(email));
+        }
         return ResponseEntity.ok(clienteService.listarClientes());
     }
 

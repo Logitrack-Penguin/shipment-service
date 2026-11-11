@@ -118,6 +118,18 @@ public class ClienteServiceImpl implements ClienteService {
 
     /**
      * {@inheritDoc}
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<ClienteResponseDto> buscarPorEmail(String email) {
+        log.debug("Buscando cliente por email");
+        return clienteRepository.findByEmailIgnoreCase(email.trim()).stream()
+                .map(ClienteMapper::toResponseDto)
+                .toList();
+    }
+
+    /**
+     * {@inheritDoc}
      *
      * <p>Recupera la totalidad de los registros de clientes almacenados, transformándolos
      * masivamente a una lista de {@link ClienteResponseDto} mediante Streams de Java.</p>
